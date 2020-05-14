@@ -1,0 +1,6 @@
+[submodule "external/jive"]
+	path = external/jive
+	url = https://github.com/JiveHelix/jive.git
+[submodule "external/nlohmann_json"]
+	path = external/nlohmann_json
+	url = https://github.com/nlohmann/json.git
