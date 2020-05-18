@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 
 # detect whether fields has been added as a subproject
 if(NOT DEFINED PROJECT_NAME)
-  set(NOT_SUBPROJECT ON)
+    set(FIELDS_NOT_SUBPROJECT ON)
 endif()
 
 include(cmake/DefineProjectOnce.cmake)
@@ -20,7 +20,7 @@ endif()
 add_subdirectory(external)
 add_subdirectory(fields)
 
-if(NOT_SUBPROJECT)
+if(FIELDS_NOT_SUBPROJECT)
     add_subdirectory(examples)
     add_subdirectory(test)
 endif()
