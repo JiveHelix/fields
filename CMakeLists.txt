@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 
+
+# detect whether fields has been added as a subproject
+if(NOT DEFINED PROJECT_NAME)
+  set(NOT_SUBPROJECT ON)
+endif()
+
 include(cmake/DefineProjectOnce.cmake)
 
 define_project_once(fields)
@@ -13,8 +19,11 @@ endif()
 
 add_subdirectory(external)
 add_subdirectory(fields)
-add_subdirectory(examples)
-add_subdirectory(test)
+
+if(NOT_SUBPROJECT)
+    add_subdirectory(examples)
+    add_subdirectory(test)
+endif()
 
 option(ENABLE_UNITY "Enable Unity builds of projects" OFF)
 
