@@ -12,7 +12,9 @@
 
 #include <type_traits>
 #include <optional>
+#include <string>
 #include "jive/for_each.h"
+
 
 namespace fields
 {
@@ -161,25 +163,16 @@ Json Unstructure(const T &structured);
 template<typename Json, typename T>
 Json UnstructureFromFields(const T &structured)
 {
-    if constexpr (HasFields<T>::value)
-    {
-        // structured has fields.
-        Json result;
+    Json result;
 
-        ForEachField<T>(
-            [&](const auto &field)
-            {
-                result[field.name] =
-                    Unstructure<Json>(structured.*(field.member));
-            });
+    ForEachField<T>(
+        [&](const auto &field)
+        {
+            result[field.name] =
+                Unstructure<Json>(structured.*(field.member));
+        });
 
-        return result;
-    }
-    else 
-    {
-        // Members without fields must be convertible to the json value.
-        return structured;
-    }
+    return result;
 }
 
 
@@ -190,9 +183,15 @@ Json Unstructure(const T &structured)
     {
         return structured.template Unstructure<Json>();
     }
-    else
+    else if constexpr (HasFields<T>::value)
     {
         return UnstructureFromFields<Json>(structured);
+    }
+    else
+    {
+        // Members without fields or Unstructure method must be convertible to
+        // the json value.
+        return structured;
     }
 }
 
@@ -295,18 +294,20 @@ T Structure(const Json &unstructured)
     {
         return T::Structure(unstructured);
     }
-
-    T result;
-
-    StructureFromFields(result, unstructured);
-
-    if constexpr (ImplementsAfterFields<T>::value)
+    else
     {
-        // Allow T to do any additional initialization.
-        result.AfterFields();
-    }
+        T result;
 
-    return result;
+        StructureFromFields(result, unstructured);
+
+        if constexpr (ImplementsAfterFields<T>::value)
+        {
+            // Allow T to do any additional initialization.
+            result.AfterFields();
+        }
+
+        return result;
+    }
 }
 
 
