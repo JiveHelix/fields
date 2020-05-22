@@ -6,4 +6,4 @@ target_link_libraries(
     project_warnings
     project_options
     fields
-    nlohmann_json)
+    CONAN_PKG::nlohmann_json)

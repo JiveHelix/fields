@@ -13,6 +13,7 @@ project(fields CXX)
 
 if(FIELDS_NOT_SUBPROJECT)
     # This is the top-level project
+    set(CONAN_EXTRA_REQUIRES "nlohmann_json/3.7.3")
     include(cmake/Standalone.cmake)
     option(ENABLE_UNITY "Enable Unity builds of projects" OFF)
 endif()

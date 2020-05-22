@@ -177,7 +177,7 @@ public:
             colorize(Colors::name, this->name_, ": ");
         }
             
-        if constexpr (HasFields<T>::value || HasFieldsTypeName<T>::value)
+        if constexpr (HasFields<T>::value)
         {
             colorize(Colors::structure, jive::GetTypeName<T>());
             outputStream << "(";
