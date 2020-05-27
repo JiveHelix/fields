@@ -197,8 +197,21 @@ public:
                 colorize(Colors::type, jive::GetTypeName<T>());
                 outputStream << " = ";
             }
-
-            outputStream << this->object_;
+            
+            if constexpr (std::is_same_v<T, bool>)
+            {
+                outputStream << std::boolalpha << this->object_;
+            }
+            else if constexpr (std::is_integral_v<T> && sizeof(T) == 1)
+            {
+                // print the numeric value of single bytes rather than the
+                // ASCII character.
+                outputStream << int16_t{this->object_};
+            }
+            else
+            {
+                outputStream << this->object_;
+            }
         }
 
         return outputStream;
@@ -220,3 +233,11 @@ private:
 
 
 } // end namespace fields
+
+
+#define DECLARE_OUTPUT_STREAM_OPERATOR(type)                                \
+inline                                                                      \
+std::ostream & operator<<(std::ostream &outputStream, const type &value)    \
+{                                                                           \
+    return outputStream << fields::DescribeCompact(value);                  \
+}
