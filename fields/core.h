@@ -327,10 +327,8 @@ T Get(const Json &json, const std::string &key, GetDefault getDefault)
     {
         return Structure<T>(json[key]);
     }
-    else
-    {
-        return getDefault();
-    }
+
+    return getDefault();
 }
 
 

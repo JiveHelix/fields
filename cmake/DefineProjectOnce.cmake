@@ -3,7 +3,7 @@ macro(define_project_once)
     if((DEFINED ${ARGV0}_SOURCE_DIR)
         AND (NOT ${ARGV0}_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR))
         message(
-            "Ignoring ARGV0 in ${CMAKE_CURRENT_SOURCE_DIR}. "
+            "Ignoring ${ARGV0} in ${CMAKE_CURRENT_SOURCE_DIR}. "
             "Already added: ${${ARGV0}_SOURCE_DIR}")
         return()
     endif()

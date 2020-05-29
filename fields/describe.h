@@ -172,7 +172,7 @@ public:
 
         outputStream << this->GetIndent();
 
-        if (this->name_.size() > 0)
+        if (!this->name_.empty())
         {
             colorize(Colors::name, this->name_, ": ");
         }
