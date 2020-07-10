@@ -9,7 +9,9 @@ add_library(fields_catch_main STATIC catch_main.cpp)
 target_link_libraries(fields_catch_main PUBLIC CONAN_PKG::catch2)
 target_link_libraries(fields_catch_main PRIVATE project_options)
 
-add_executable(fields_tests)
+add_executable(
+    fields_tests
+    marshall_tests.cpp)
 
 target_link_libraries(
     fields_tests
