@@ -15,7 +15,7 @@
 #include "jive/to_integer.h"
 #include "jive/to_float.h"
 
-namespace jive
+namespace fields
 {
 
 namespace detail
@@ -38,4 +38,4 @@ ToNumber(const std::string &value)
 
 } // end namespace detail
 
-} // end namespace jive
+} // end namespace fields

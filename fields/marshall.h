@@ -11,10 +11,12 @@
 
 #pragma once
 
+#include <memory>
+#include <map>
 #include "jive/precise_string.h"
 #include "fields/detail/marshall_detail.h"
 
-namespace jive
+namespace fields
 {
 
 class Marshall
@@ -79,8 +81,49 @@ public:
         this->value_ = value;
     }
 
+    size_t count(const std::string &name) const
+    {
+        return this->membersByName_.count(name);
+    }
+
+    Marshall & operator[](const std::string &name)
+    {
+        auto &member = this->membersByName_[name];
+
+        if (!member)
+        {
+            // Create it.
+            member = std::make_unique<Marshall>();
+        }
+
+        return *member;
+    }
+
+    const Marshall & operator[](const std::string &name) const
+    {
+        return *(this->membersByName_.at(name));
+    }
+
+    template<size_t N>
+    Marshall & operator[](const char (&name)[N])
+    {
+        return this->operator[](std::string(name));
+    }
+
+    template<size_t N>
+    const Marshall & operator[](const char (&name)[N]) const
+    {
+        return this->operator[](std::string(name));
+    }
+
+    Marshall & at(const std::string &name)
+    {
+        return *(this->membersByName_.at(name));
+    }
+
 private:
     std::string value_;
+    std::map<std::string, std::unique_ptr<Marshall>> membersByName_;
 };
 
-} // end namespace jive
+} // end namespace fields
