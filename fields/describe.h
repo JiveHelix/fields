@@ -1,8 +1,8 @@
 /**
   * @file describe.h
-  * 
+  *
   * @brief Creates a string representation of any fields class.
-  * 
+  *
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 01 May 2020
   * @copyright Jive Helix
@@ -30,9 +30,31 @@ struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>::value>>
 
 } // end namespace jive
 
-
 namespace fields
 {
+
+// Optionally, a class can provide it's own Describe method.
+template<typename T, typename Colors, typename VerboseTypes, typename = void>
+struct ImplementsDescribe: std::false_type {};
+
+template<typename T, typename Colors, typename VerboseTypes>
+struct ImplementsDescribe<
+    T,
+    Colors,
+    VerboseTypes,
+    std::void_t<
+        std::enable_if_t<
+            std::is_same_v<
+                std::ostream &,
+                decltype(
+                    std::declval<T>().template Describe<
+                        Colors,
+                        VerboseTypes>(std::declval<std::ostream &>(), int()))
+            >
+        >
+    >
+>: std::true_type {};
+
 
 struct DefaultColors
 {
@@ -41,7 +63,7 @@ struct DefaultColors
     static constexpr auto type = jive::color::yellow;
 };
 
-struct NoColor 
+struct NoColor
 {
     static constexpr auto name = "";
     static constexpr auto structure = "";
@@ -59,7 +81,7 @@ class Describe;
 template<typename Color, typename T>
 auto DescribeColorized(const T &object, int indent = -1)
 {
-    return Describe<T, Color>(object, indent);    
+    return Describe<T, Color>(object, indent);
 }
 
 
@@ -95,6 +117,17 @@ std::ostream & operator<<(
 }
 
 
+inline std::string MakeIndent(int indent)
+{
+    if (indent <= 0)
+    {
+        return {};
+    }
+
+    return "\n" + std::string(static_cast<unsigned>(indent) * 4, ' ');
+}
+
+
 template<typename T, typename Colors, typename VerboseTypes>
 class Describe
 {
@@ -122,13 +155,37 @@ public:
 
     std::string GetIndent() const
     {
-        if (this->indent_ <= 0)
-        {
-            return {};
-        }
+        return MakeIndent(this->indent_);
+    }
 
-        return "\n" + std::string(
-            static_cast<unsigned>(this->indent_) * 4, ' ');
+    template<typename Object, std::size_t N, std::size_t... I>
+    std::ostream & DescribeArray(
+        std::ostream &outputStream,
+        const Object (&array)[N],
+        std::index_sequence<I...>) const
+    {
+        // Use a fold expression to print a comma between each element.
+        // Don't print a comma before the first member.
+        ((outputStream << (I == 0 ? "" : ", ") <<
+            /* Recursively wrap each member in Describe */
+            Describe<Object, Colors, VerboseTypes>(
+                array[I],
+                std::to_string(I),
+                (this->indent_ < 0) ? -1 : this->indent_ + 1)),
+         ...);
+
+        return outputStream;
+    }
+
+    template<typename Object, std::size_t N>
+    std::ostream & DescribeArray(
+        std::ostream &outputStream,
+        const Object (&array)[N]) const
+    {
+        return this->DescribeArray(
+            outputStream,
+            array,
+            std::make_index_sequence<N>{});
     }
 
     template<typename Object, typename Fields, std::size_t... I>
@@ -147,7 +204,7 @@ public:
                 std::get<I>(fields).name,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)),
          ...);
-        
+
         return outputStream;
     }
 
@@ -176,14 +233,21 @@ public:
         {
             colorize(Colors::name, this->name_, ": ");
         }
-            
+
         if constexpr (HasFields<T>::value)
         {
             colorize(Colors::structure, jive::GetTypeName<T>());
             outputStream << "(";
         }
 
-        if constexpr (HasFields<T>::value)
+        if constexpr (ImplementsDescribe<T, Colors, VerboseTypes>::value)
+        {
+            this->object_.Describe<Colors, VerboseTypes>(
+                outputStream,
+                (this->indent_ < 0) ? -1 : this->indent_ + 1);
+            outputStream << ")";
+        }
+        else if constexpr (HasFields<T>::value)
         {
             this->DescribeFields(outputStream, this->object_, T::fields);
             outputStream << ")";
@@ -197,7 +261,7 @@ public:
                 colorize(Colors::type, jive::GetTypeName<T>());
                 outputStream << " = ";
             }
-            
+
             if constexpr (std::is_same_v<T, bool>)
             {
                 outputStream << std::boolalpha << this->object_;
@@ -207,6 +271,24 @@ public:
                 // print the numeric value of single bytes rather than the
                 // ASCII character.
                 outputStream << int16_t{this->object_};
+            }
+            else if constexpr (std::is_array_v<T>)
+            {
+                this->DescribeArray(outputStream, this->object_);
+            }
+            else if constexpr (std::is_pointer_v<T>)
+            {
+                if (this->object_ != nullptr)
+                {
+                    outputStream <<
+                        Describe<
+                                std::remove_const_t<std::remove_pointer_t<T>>,
+                                Colors,
+                                VerboseTypes>(
+                            *(this->object_),
+                            "",
+                            this->indent_ + 1);
+                }
             }
             else
             {

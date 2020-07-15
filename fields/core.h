@@ -332,4 +332,36 @@ T Get(const Json &json, const std::string &key, GetDefault getDefault)
 }
 
 
+#define DECLARE_ADAPTERS(FieldsClass, Adapted)                       \
+    FieldsClass() = default;                                         \
+                                                                     \
+    FieldsClass(const Adapted &other)                                \
+    {                                                                \
+        this->operator=(other);                                      \
+    }                                                                \
+                                                                     \
+    Adapted Get() const                                              \
+    {                                                                \
+        static_assert(                                               \
+            !std::is_polymorphic_v<FieldsClass>,                     \
+            "Polymorphism breaks alignment of the 'this' pointer."); \
+                                                                     \
+        static_assert(sizeof(Adapted) == sizeof(FieldsClass));       \
+        Adapted result;                                              \
+        memcpy(&result, this, sizeof(Adapted));                      \
+        return result;                                               \
+    }                                                                \
+                                                                     \
+    FieldsClass &operator=(const Adapted &other)                     \
+    {                                                                \
+        static_assert(                                               \
+            !std::is_polymorphic_v<FieldsClass>,                     \
+            "Polymorphism breaks alignment of the 'this' pointer."); \
+                                                                     \
+        static_assert(sizeof(Adapted) == sizeof(FieldsClass));       \
+        memcpy(this, &other, sizeof(Adapted));                       \
+        return *this;                                                \
+    }
+
+
 } // end namespace fields
