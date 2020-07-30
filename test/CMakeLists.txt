@@ -21,9 +21,7 @@ target_link_libraries(
     fields_catch_main
     fields)
 
-# automatically discover tests that are defined in catch based test files you
-# can modify the unittests. TEST_PREFIX to whatever you want, or use different
-# for different binaries
+# automatically discover tests that are defined in catch based test files.
 catch_discover_tests(
     fields_tests
     TEST_PREFIX
