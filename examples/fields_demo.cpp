@@ -133,6 +133,18 @@ struct AlteredColors: public fields::DefaultColors
     static constexpr auto structure = jive::color::magenta;
 };
 
+template<typename T>
+auto DescribeAltered(const T &object, int indent = -1)
+{
+    return fields::DescribeColorized<T, AlteredColors>(object, indent);
+}
+
+template<typename T>
+auto DescribeAlteredVerbose(const T &object, int indent = -1)
+{
+    return fields::DescribeColorizedVerbose<T, AlteredColors>(object, indent);
+}
+
 
 
 int main()
@@ -143,40 +155,47 @@ int main()
         "This is my message"};
 
     auto unstructured{fields::Unstructure<json>(original)};
+
+    // Restructure using one of the alternate names for 'first': 'primis'
     auto first = unstructured["anyNameYouWant"]["first"];
     unstructured["anyNameYouWant"].erase("first");
     unstructured["anyNameYouWant"]["primis"] = first;
-    
-    std::cout << unstructured["anyNameYouWant"].count("first") << std::endl;
+
     auto asString = unstructured.dump();
 
-    std::cout << "unstructured: " << asString << std::endl;
+    std::cout << "\nunstructured: " << asString << std::endl;
 
     auto recoveredUnstructured = json::parse(asString);
 
     auto recovered = fields::Structure<Wobble>(recoveredUnstructured);
 
-    std::cout << std::boolalpha << "recovered == original: "
-        << (recovered == original) << std::endl;
+    std::cout << std::boolalpha
+              << "\nrecovered == original: " << (recovered == original)
+              << std::endl;
 
-    std::cout << "recovered: " << fields::Unstructure<json>(recovered).dump()
-        << std::endl;
+    std::cout << "\nrecovered: " << fields::Unstructure<json>(recovered).dump()
+              << std::endl;
 
-    std::cout << "Describe without indent argument:" << std::endl; 
-    std::cout << fields::DescribeCompact(recovered) << std::endl;
+    std::cout << "\nDescribeColorized without indent argument "
+              << "(prints on one line):"
+              << std::endl;
 
-    std::cout << "DescribeAllTypes with indent argument:" << std::endl; 
-    std::cout <<
-        fields::DescribeColorized<fields::DefaultColors>(recovered, 0)
-        << std::endl;
+    std::cout << fields::DescribeColorized(recovered) << std::endl;
 
-    std::cout << "Change the structure color to magenta:" << std::endl;
-    std::cout <<
-        fields::DescribeColorized<AlteredColors>(recovered, 0) << std::endl;
+    std::cout << "\nDescribeColorizedVerbose with indent argument "
+              << "(multi-line with type information):"
+              << std::endl;
 
-    std::cout << "DescribeColorizedCompact: " << std::endl;
-    std::cout <<
-        fields::DescribeColorizedCompact<AlteredColors>(recovered) << std::endl;
+    std::cout << fields::DescribeColorizedVerbose(recovered, 0) << std::endl;
+
+    std::cout << "\nDescribeColorized (no type information):" << std::endl;
+    std::cout << fields::DescribeColorized(recovered, 0) << std::endl;
+
+    std::cout << "\nChange the structure color to magenta:" << std::endl;
+    std::cout << DescribeAltered(recovered, 0) << std::endl;
+
+    std::cout << "\nDescribeAlteredVerbose: " << std::endl;
+    std::cout << DescribeAlteredVerbose(recovered, 0) << std::endl;
+
+    return 0;
 }
-
-

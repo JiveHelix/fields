@@ -1,5 +1,5 @@
 /**
-  * @file marshall.h
+  * @file marshal.h
   *
   * @brief Convert arithmetic types to and from std::string.
   *
@@ -15,37 +15,69 @@
 #include <map>
 #include <vector>
 #include "jive/precise_string.h"
-#include "fields/detail/marshall_detail.h"
+#include "jive/numeric_string_compare.h"
+#include "fields/detail/marshal_detail.h"
+#include "fields/describe.h" // MakeIndent
 
 namespace fields
 {
 
-class Marshall
+
+struct DefaultBooleans
+{
+    static constexpr auto trueString = "true";
+    static constexpr auto falseString = "false";
+};
+
+
+template<unsigned width>
+std::string MakeIndentedLine(int indent)
+{
+    if (indent < 0)
+    {
+        return " ";
+    }
+
+    return "\n" + std::string(static_cast<unsigned>(indent) * width, ' ');
+}
+
+
+template<typename Booleans>
+class MarshalTemplate
 {
 public:
-    Marshall() = default;
+    using This = MarshalTemplate<Booleans>;
+
+    using Map = std::map<
+        std::string,
+        std::unique_ptr<This>,
+        jive::NumericStringCompare>;
+
+    using const_iterator = typename Map::const_iterator;
+
+    MarshalTemplate() = default;
 
     template<
         typename T,
         typename = typename std::enable_if<(
             std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)>>
-    Marshall(T value)
+    MarshalTemplate(T value)
         :
         value_(jive::PreciseString(value))
     {
 
     }
 
-    Marshall(const std::string &value)
+    MarshalTemplate(const std::string &value)
         :
         value_(value)
     {
 
     }
 
-    Marshall(bool value)
+    MarshalTemplate(bool value)
         :
-        value_((value) ? "true" : "false")
+        value_((value) ? Booleans::trueString : Booleans::falseString)
     {
 
     }
@@ -58,10 +90,10 @@ public:
 
     operator bool () const
     {
-        return (this->value_ == "true");
+        return (this->value_ == Booleans::trueString);
     }
 
-    operator std::string () const { return this->value_; }
+    operator const std::string & () const { return this->value_; }
 
     template<
         typename T,
@@ -74,12 +106,13 @@ public:
 
     void operator=(bool value)
     {
-        this->value_ = (value) ? "true" : "false";
+        this->value_ = (value) ? Booleans::trueString : Booleans::falseString;
     }
 
-    void operator=(const std::string &value)
+    This & operator=(const std::string &value)
     {
         this->value_ = value;
+        return *this;
     }
 
     size_t count(const std::string &name) const
@@ -88,7 +121,7 @@ public:
     }
 
     template<typename Key>
-    Marshall & operator[](const Key &name)
+    This & operator[](const Key &name)
     {
         auto it = this->membersByName_.find(name);
 
@@ -98,14 +131,14 @@ public:
             // Create it.
             std::tie(it, std::ignore) = this->membersByName_.emplace(
                 name,
-                std::make_unique<Marshall>());
+                std::make_unique<This>());
         }
 
         return *it->second;
     }
 
     template<typename Key>
-    const Marshall & operator[](const Key &name) const
+    const This & operator[](const Key &name) const
     {
         auto it = this->membersByName_.find(name);
         if (it == this->membersByName_.end())
@@ -115,21 +148,8 @@ public:
 
         return *it->second;
     }
-    /**
 
-    template<size_t N>
-    Marshall & operator[](const char (&name)[N])
-    {
-        return this->operator[](std::string(name));
-    }
-
-    template<size_t N>
-    const Marshall & operator[](const char (&name)[N]) const
-    {
-        return this->operator[](std::string(name));
-    }
-**/
-    Marshall & at(const std::string &name)
+    This & at(const std::string &name)
     {
         return *(this->membersByName_.at(name));
     }
@@ -149,11 +169,43 @@ public:
 
     size_t size() const { return this->membersByName_.size(); }
 
+    const_iterator begin() const { return this->membersByName_.begin(); }
+    const_iterator end() const { return this->membersByName_.end(); }
+
+    template<typename Parameters>
+    std::ostream & Serialize(std::ostream &outputStream, int indent = -1)
+    {
+        outputStream << this->value_;
+
+        if (!this->membersByName_.empty())
+        {
+            for (const auto & [name, member]: this->membersByName_)
+            {
+                outputStream
+                    << MakeIndentedLine<Parameters::indentWidth>(indent)
+                    << name;
+
+                if (!member->value_.empty())
+                {
+                    outputStream << Parameters::separator;
+                }
+
+                member->template Serialize<Parameters>(
+                    outputStream,
+                    indent + 1);
+            }
+        }
+
+        return outputStream;
+    }
+
 private:
     std::string value_;
-
-    std::map<std::string, std::unique_ptr<Marshall>, std::less<>>
-        membersByName_;
+    Map membersByName_;
 };
+
+
+using Marshal = MarshalTemplate<DefaultBooleans>;
+
 
 } // end namespace fields

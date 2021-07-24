@@ -33,7 +33,13 @@ struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>::value>>
 namespace fields
 {
 
-// Optionally, a class can provide it's own Describe method.
+/** Optionally, a class can provide it's own Describe method.
+ ** Must be a templated member method like
+ **
+ ** template<typename Colors, typename VerboseTypes>
+ ** std::ostream & Describe(std::ostream &, int indent);
+ **
+ **/
 template<typename T, typename Colors, typename VerboseTypes, typename = void>
 struct ImplementsDescribe: std::false_type {};
 
@@ -74,21 +80,21 @@ struct NoColor
 template<
     typename T,
     typename Colors = NoColor,
-    typename VerboseTypes = std::true_type>
+    typename VerboseTypes = std::false_type>
 class Describe;
 
 
-template<typename Color, typename T>
+template<typename T, typename Colors = DefaultColors>
 auto DescribeColorized(const T &object, int indent = -1)
 {
-    return Describe<T, Color>(object, indent);
+    return Describe<T, Colors>(object, indent);
 }
 
 
-template<typename Color, typename T>
-auto DescribeColorizedCompact(const T &object, int indent = -1)
+template<typename T, typename Colors = DefaultColors>
+auto DescribeColorizedVerbose(const T &object, int indent = -1)
 {
-    return Describe<T, Color, std::false_type>(object, indent);
+    return Describe<T, Colors, std::true_type>(object, indent);
 }
 
 
@@ -156,6 +162,34 @@ public:
     std::string GetIndent() const
     {
         return MakeIndent(this->indent_);
+    }
+
+    template<typename Object>
+    std::ostream & DescribeMap(
+        std::ostream &outputStream,
+        const Object &mapLike) const
+    {
+        outputStream << "{";
+        const auto indentCount = (this->indent_ >= 0) ? this->indent_ + 1: -1;
+        const auto indent = MakeIndent(indentCount);
+        size_t count = 0;
+
+        for (const auto & [key, value]: mapLike)
+        {
+            outputStream << indent << key << ": " <<
+                Describe<typename Object::mapped_type, Colors, VerboseTypes>(
+                    value,
+                    indentCount);
+
+            ++count;
+
+            if (count < mapLike.size())
+            {
+                outputStream << ", ";
+            }
+        }
+
+        return outputStream << "}";
     }
 
     template<typename Object, std::size_t N, std::size_t... I>
@@ -272,6 +306,10 @@ public:
                 // ASCII character.
                 outputStream << int16_t{this->object_};
             }
+            else if constexpr (jive::detail::IsMapLike<T>::value)
+            {
+                this->DescribeMap(outputStream, this->object_);
+            }
             else if constexpr (std::is_array_v<T>)
             {
                 this->DescribeArray(outputStream, this->object_);
@@ -286,8 +324,7 @@ public:
                                 Colors,
                                 VerboseTypes>(
                             *(this->object_),
-                            "",
-                            this->indent_ + 1);
+                            (this->indent_ < 0) ? -1 : this->indent_ + 1);
                 }
             }
             else

@@ -5,14 +5,14 @@
   */
 
 #include <catch2/catch.hpp>
-#include "fields/marshall.h"
+#include "fields/marshal.h"
 #include "jive/testing/gettys_words.h"
 #include "jive/testing/cast_limits.h"
 
 
 TEMPLATE_TEST_CASE(
-    "Round-trip full-range floating point values through Marshall",
-    "[marshall]",
+    "Round-trip full-range floating point values through Marshal",
+    "[marshal]",
     float,
     double,
     long double)
@@ -24,15 +24,15 @@ TEMPLATE_TEST_CASE(
                 CastLimits<TestType>::Min(),
                 CastLimits<TestType>::Max())));
 
-    auto marshalled = fields::Marshall(value);
-    TestType recovered = marshalled;
+    auto marshaled = fields::Marshal(value);
+    TestType recovered = marshaled;
     REQUIRE(recovered == Approx(value));
 }
 
 
 TEMPLATE_TEST_CASE(
-    "Round-trip limited-range floating point values through Marshall",
-    "[marshall]",
+    "Round-trip limited-range floating point values through Marshal",
+    "[marshal]",
     float,
     double,
     long double)
@@ -44,16 +44,16 @@ TEMPLATE_TEST_CASE(
                 static_cast<TestType>(-999e9),
                 static_cast<TestType>(999e9))));
 
-    auto marshalled = fields::Marshall(value);
-    TestType recovered = marshalled;
+    auto marshaled = fields::Marshal(value);
+    TestType recovered = marshaled;
 
     REQUIRE(recovered == Approx(value));
 }
 
 
 TEMPLATE_TEST_CASE(
-    "Round-trip integer values through Marshall",
-    "[marshall]",
+    "Round-trip integer values through Marshal",
+    "[marshal]",
     int8_t,
     uint8_t,
     int16_t,
@@ -70,39 +70,39 @@ TEMPLATE_TEST_CASE(
                 CastLimits<TestType>::Min(),
                 CastLimits<TestType>::Max())));
 
-    auto marshalled = fields::Marshall(value);
+    auto marshaled = fields::Marshal(value);
     TestType recovered = value;
 
-    // Marshall is designed to preserve precision, so the == comparison should
+    // Marshal is designed to preserve precision, so the == comparison should
     // pass.
     REQUIRE(recovered == value);
 }
 
 
-TEST_CASE("Round-trip std::string through Marshall", "[marshall]")
+TEST_CASE("Round-trip std::string through Marshal", "[marshal]")
 {
     auto wordCount = GENERATE(take(10, random(1u, 10u)));
     std::string value = RandomGettysWords().MakeWords(wordCount);
-    auto marshalled = fields::Marshall(value);
-    std::string recovered = marshalled;
+    auto marshaled = fields::Marshal(value);
+    std::string recovered = marshaled;
     REQUIRE(recovered == value);
 }
 
 
-TEST_CASE("Round-trip booleans through Marshall", "[marshall]")
+TEST_CASE("Round-trip booleans through Marshal", "[marshal]")
 {
     bool value = true;
-    auto marshalled = fields::Marshall(value);
-    bool recovered = marshalled;
+    auto marshaled = fields::Marshal(value);
+    bool recovered = marshaled;
     REQUIRE(recovered);
-    marshalled = false;
-    REQUIRE(!marshalled);
+    marshaled = false;
+    REQUIRE(!marshaled);
 }
 
 
 TEMPLATE_TEST_CASE(
-    "Store members in Marshall",
-    "[marshall]",
+    "Store members in Marshal",
+    "[marshal]",
     float,
     double,
     long double,
@@ -124,14 +124,14 @@ TEMPLATE_TEST_CASE(
                     CastLimits<TestType>::Min(),
                     CastLimits<TestType>::Max()))));
 
-    auto marshall = fields::Marshall();
-    marshall["firstValue"] = values[0];
-    marshall["secondValue"] = values[1];
-    marshall["thirdValue"] = values[2];
+    auto marshal = fields::Marshal();
+    marshal["firstValue"] = values[0];
+    marshal["secondValue"] = values[1];
+    marshal["thirdValue"] = values[2];
 
-    TestType firstValue = marshall["firstValue"];
-    TestType secondValue = marshall["secondValue"];
-    TestType thirdValue = marshall["thirdValue"];
+    TestType firstValue = marshal["firstValue"];
+    TestType secondValue = marshal["secondValue"];
+    TestType thirdValue = marshal["thirdValue"];
 
     REQUIRE(firstValue == Approx(values[0]));
     REQUIRE(secondValue == Approx(values[1]));
@@ -140,8 +140,8 @@ TEMPLATE_TEST_CASE(
 
 
 TEMPLATE_TEST_CASE(
-    "Store deeper levels in Marshall",
-    "[marshall]",
+    "Store deeper levels in Marshal",
+    "[marshal]",
     float,
     double,
     long double,
@@ -161,8 +161,8 @@ TEMPLATE_TEST_CASE(
                 CastLimits<TestType>::Min(),
                 CastLimits<TestType>::Max())));
 
-    auto marshall = fields::Marshall();
-    marshall["levelOne"]["levelTwo"]["myValue"] = value;
-    TestType recovered = marshall["levelOne"]["levelTwo"]["myValue"];
+    auto marshal = fields::Marshal();
+    marshal["levelOne"]["levelTwo"]["myValue"] = value;
+    TestType recovered = marshal["levelOne"]["levelTwo"]["myValue"];
     REQUIRE(recovered == Approx(value));
 }

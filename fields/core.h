@@ -250,6 +250,13 @@ template<typename T, typename Json>
 T Structure(const Json &unstructured);
 
 
+template<typename T>
+struct IsString: std::false_type {};
+
+template<>
+struct IsString<std::string>: std::true_type {};
+
+
 template<typename T, typename Json>
 void StructureFromFields(T &result, const Json &unstructured)
 {
@@ -282,7 +289,14 @@ void StructureFromFields(T &result, const Json &unstructured)
     else
     {
         // Members without fields must be convertible from the json value.
-        result = unstructured;
+        if constexpr (IsString<T>::value)
+        {
+            result = static_cast<std::string>(unstructured);
+        }
+        else
+        {
+            result = unstructured;
+        }
     }
 }
 

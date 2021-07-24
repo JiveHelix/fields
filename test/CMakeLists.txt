@@ -11,7 +11,7 @@ target_link_libraries(fields_catch_main PRIVATE project_options)
 
 add_executable(
     fields_tests
-    marshall_tests.cpp)
+    marshal_tests.cpp)
 
 target_link_libraries(
     fields_tests

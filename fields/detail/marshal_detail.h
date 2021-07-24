@@ -1,7 +1,7 @@
 /**
-  * @file marshall_detail.h
+  * @file marshal_detail.h
   *
-  * @brief A helper method for unmarshalling values.
+  * @brief A helper method for unmarshaling values.
   *
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 09 Jul 2020
