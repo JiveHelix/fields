@@ -16,6 +16,7 @@
 #include "fields/core.h"
 #include "jive/describe_type.h"
 #include "jive/colorize.h"
+#include "jive/type_traits.h"
 
 
 namespace jive
@@ -25,7 +26,7 @@ namespace jive
 template<typename T>
 struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>::value>>
 {
-    static constexpr auto value = T::fieldsTypeName;
+    static constexpr std::string_view value = T::fieldsTypeName;
 };
 
 } // end namespace jive
@@ -164,22 +165,33 @@ public:
         return MakeIndent(this->indent_);
     }
 
+    template<typename Key>
+    static std::string KeyToString(const Key &key)
+    {
+        return std::to_string(key);
+    }
+
+    template<>
+    static std::string KeyToString<std::string>(const std::string &key)
+    {
+        return key;
+    }
+
     template<typename Object>
     std::ostream & DescribeMap(
         std::ostream &outputStream,
         const Object &mapLike) const
     {
         outputStream << "{";
-        const auto indentCount = (this->indent_ >= 0) ? this->indent_ + 1: -1;
-        const auto indent = MakeIndent(indentCount);
         size_t count = 0;
 
         for (const auto & [key, value]: mapLike)
         {
-            outputStream << indent << key << ": " <<
+            outputStream <<
                 Describe<typename Object::mapped_type, Colors, VerboseTypes>(
                     value,
-                    indentCount);
+                    KeyToString(key),
+                    (this->indent_ < 0) ? -1 : this->indent_ + 1);
 
             ++count;
 
@@ -190,6 +202,33 @@ public:
         }
 
         return outputStream << "}";
+    }
+
+    template<typename Object>
+    std::ostream & DescribeContainer(
+        std::ostream &outputStream,
+        const Object &container) const
+    {
+        size_t count = 0;
+        outputStream << "[";
+
+        for (const auto &value: container)
+        {
+            outputStream <<
+                Describe<typename Object::value_type, Colors, VerboseTypes>(
+                    value,
+                    std::to_string(count),
+                    (this->indent_ < 0) ? -1 : this->indent_ + 1);
+
+            ++count;
+
+            if (count < container.size())
+            {
+                outputStream << ", ";
+            }
+        }
+
+        return outputStream << "]";
     }
 
     template<typename Object, std::size_t N, std::size_t... I>
@@ -276,7 +315,7 @@ public:
 
         if constexpr (ImplementsDescribe<T, Colors, VerboseTypes>::value)
         {
-            this->object_.Describe<Colors, VerboseTypes>(
+            this->object_.template Describe<Colors, VerboseTypes>(
                 outputStream,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
             outputStream << ")";
@@ -306,9 +345,13 @@ public:
                 // ASCII character.
                 outputStream << int16_t{this->object_};
             }
-            else if constexpr (jive::detail::IsMapLike<T>::value)
+            else if constexpr (jive::IsKeyValueContainer<T>::value)
             {
                 this->DescribeMap(outputStream, this->object_);
+            }
+            else if constexpr (jive::IsValueContainer<T>::value)
+            {
+                this->DescribeContainer(outputStream, this->object_);
             }
             else if constexpr (std::is_array_v<T>)
             {

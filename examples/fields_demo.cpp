@@ -1,8 +1,8 @@
 /**
   * @file fields_demo.cpp
-  * 
+  *
   * @brief A demonstration of some fields features.
-  * 
+  *
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 13 May 2020
   * @copyright Jive Helix
@@ -45,6 +45,15 @@ struct Foo
         Field(&Foo::z, "z"));
 
     constexpr static auto fieldsTypeName = "Foo";
+
+#if 0
+    template<typename Colors, typename VerboseTypes>
+    std::ostream & Describe(std::ostream &outputStream, int) const
+    {
+        return outputStream << "I am Foo";
+    }
+#endif
+
 };
 
 
@@ -101,9 +110,12 @@ struct Bar
 
 struct Wobble
 {
+    uint8_t alpha[4];
     Bar frob;
     Foo flub;
     std::string message;
+    std::vector<Foo> numbers;
+    std::map<std::string, Foo> fooByName;
 
     void AfterFields()
     {
@@ -112,9 +124,12 @@ struct Wobble
     }
 
     constexpr static auto fields = std::make_tuple(
+        Field(&Wobble::alpha, "alpha"),
         Field(&Wobble::frob, "anyNameYouWant"),
         Field(&Wobble::flub, "Even with spaces"),
-        Field(&Wobble::message, "A message for you"));
+        Field(&Wobble::message, "A message for you"),
+        Field(&Wobble::numbers, "numbers"),
+        Field(&Wobble::fooByName, "fooByName"));
 
     constexpr static auto fieldsTypeName = "Wobble";
 };
@@ -146,13 +161,27 @@ auto DescribeAlteredVerbose(const T &object, int indent = -1)
 }
 
 
+template<typename Field>
+void PrintFieldType(Field &&field)
+{
+    std::cout << field.name << ": " <<
+        jive::GetTypeName<fields::FieldType<Field>>() << std::endl;
+}
+
 
 int main()
 {
     Wobble original{
+        {'x', 'v', 'u', 't'},
         {{13, 42000, 56.0}, {-19000, 15, 3.14}, 9.80},
         {56, 88, 3.1415926},
-        "This is my message"};
+        "This is my message",
+        {{0, 1, 2}, {117, -67, 13e-9}, {117 * 2, -67 * 2, 13e-9 * 2}},
+        {}};
+
+    original.fooByName["1st"] = {0, 1, 2};
+    original.fooByName["2nd"] = {117, -67, 13e-9};
+    original.fooByName["3rd"] = {117 * 2, -67 * 2, 13e-9 * 2};
 
     auto unstructured{fields::Unstructure<json>(original)};
 
@@ -196,6 +225,8 @@ int main()
 
     std::cout << "\nDescribeAlteredVerbose: " << std::endl;
     std::cout << DescribeAlteredVerbose(recovered, 0) << std::endl;
+
+    PrintFieldType(std::get<0>(Wobble::fields));
 
     return 0;
 }

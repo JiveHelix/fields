@@ -1,8 +1,8 @@
 /**
   * @file core.h
-  * 
+  *
   * @brief Core utilities for defining and accessing fields.
-  * 
+  *
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 01 May 2020
   * @copyright Jive Helix
@@ -13,7 +13,10 @@
 #include <type_traits>
 #include <optional>
 #include <string>
+#include <map>
+#include <vector>
 #include "jive/for_each.h"
+#include "jive/type_traits.h"
 
 
 namespace fields
@@ -168,8 +171,30 @@ Json UnstructureFromFields(const T &structured)
     ForEachField<T>(
         [&](const auto &field)
         {
-            result[field.name] =
-                Unstructure<Json>(structured.*(field.member));
+            using Type = FieldType<decltype(field)>;
+
+            if constexpr (std::is_array_v<Type>)
+            {
+                // The field is an array, so it cannot be assigned.
+                static_assert(
+                    std::rank_v<Type> == 1,
+                    "Currently supports only 1-dimensional arrays.");
+
+                // The field is an array, so it cannot be assigned.
+                using Subtype = std::remove_all_extents_t<Type>;
+                static constexpr auto size = std::extent_v<Type>;
+
+                const Subtype * begin = &(structured.*(field.member))[0];
+                const Subtype * end = begin + size;
+
+                std::vector<Subtype> asVector{begin, end};
+                result[field.name] = Unstructure<Json>(asVector);
+            }
+            else
+            {
+                result[field.name] =
+                    Unstructure<Json>(structured.*(field.member));
+            }
         });
 
     return result;
@@ -186,6 +211,30 @@ Json Unstructure(const T &structured)
     else if constexpr (HasFields<T>::value)
     {
         return UnstructureFromFields<Json>(structured);
+    }
+    else if constexpr (jive::IsKeyValueContainer<T>::value)
+    {
+        // Convert to a map of unstructured json objects.
+        std::map<typename T::key_type, Json> result;
+
+        for (auto & [key, value]: structured)
+        {
+            result[key] = Unstructure<Json>(value);
+        }
+
+        return result;
+    }
+    else if constexpr (jive::IsValueContainer<T>::value)
+    {
+        // Convert the iterable to a vector of unstructured values.
+        std::vector<Json> result;
+
+        for (auto &value: structured)
+        {
+            result.emplace_back(Unstructure<Json>(value));
+        }
+
+        return result;
     }
     else
     {
@@ -204,7 +253,7 @@ const Json * FindMember(const Field &field, const Json &unstructured)
         // The canonical name for this field was found.
         return &unstructured[field.name];
     }
-    
+
     auto otherNames = field.otherNames;
     if constexpr (std::tuple_size<decltype(otherNames)>::value > 0)
     {
@@ -220,7 +269,7 @@ const Json * FindMember(const Field &field, const Json &unstructured)
                     matchingName = otherName;
                 }
             });
-        
+
         if (matchingName)
         {
             return &unstructured[matchingName.value()];
@@ -250,13 +299,6 @@ template<typename T, typename Json>
 T Structure(const Json &unstructured);
 
 
-template<typename T>
-struct IsString: std::false_type {};
-
-template<>
-struct IsString<std::string>: std::true_type {};
-
-
 template<typename T, typename Json>
 void StructureFromFields(T &result, const Json &unstructured)
 {
@@ -271,25 +313,81 @@ void StructureFromFields(T &result, const Json &unstructured)
             {
                 using Type = FieldType<decltype(field)>;
 
+                if constexpr (std::is_array_v<Type>)
+                {
+                    // The field is an array, so it cannot be assigned.
+                    static_assert(
+                        std::rank_v<Type> == 1,
+                        "Currently supports only 1-dimensional arrays.");
+                }
+
                 auto unstructuredMember = FindMember(field, unstructured);
-                    
+
                 if (unstructuredMember)
                 {
                     // The field was found.
-                    result.*(field.member) =
-                        Structure<Type>(*unstructuredMember);
+                    if constexpr (std::is_array_v<Type>)
+                    {
+                        // The field is an array, so it cannot be assigned.
+                        using Subtype = std::remove_all_extents_t<Type>;
+                        static constexpr auto size = std::extent_v<Type>;
+
+                        for (size_t i = 0; i < size; ++i)
+                        {
+                            (result.*(field.member))[i] =
+                                Structure<Subtype>(unstructuredMember->at(i));
+                        }
+                    }
+                    else
+                    {
+                        result.*(field.member) =
+                            Structure<Type>(*unstructuredMember);
+                    }
                 }
                 else
                 {
                     // Initialize missing field to its default value
-                    result.*(field.member) = Default<Type>();
+                    if constexpr (std::is_array_v<Type>)
+                    {
+                        // The field is an array, so it cannot be assigned.
+                        using Subtype = std::remove_all_extents_t<Type>;
+                        static constexpr auto size = std::extent_v<Type>;
+
+                        for (size_t i = 0; i < size; ++i)
+                        {
+                            (result.*(field.member))[i] = Default<Subtype>();
+                        }
+                    }
+                    else
+                    {
+                        result.*(field.member) = Default<Type>();
+                    }
                 }
             });
+    }
+    else if constexpr (jive::IsKeyValueContainer<T>::value)
+    {
+        // Convert the key value pairs to the map type.
+        auto asMap =
+            unstructured.template get<std::map<typename T::key_type, Json>>();
+
+        for (auto & [key, value]: asMap)
+        {
+
+            result[key] = Structure<typename T::mapped_type>(value);
+        }
+    }
+    else if constexpr (jive::IsValueContainer<T>::value)
+    {
+        for (auto &value: unstructured)
+        {
+            result.push_back(Structure<typename T::value_type>(value));
+        }
     }
     else
     {
         // Members without fields must be convertible from the json value.
-        if constexpr (IsString<T>::value)
+        if constexpr (jive::IsString<T>::value)
         {
             result = static_cast<std::string>(unstructured);
         }
