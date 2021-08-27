@@ -289,7 +289,7 @@ public:
     {
         constexpr auto itemCount = std::tuple_size<Fields>::value;
 
-        return this->DescribeFields(
+        return this->template DescribeFields(
             outputStream,
             object,
             fields,
@@ -322,7 +322,10 @@ public:
         }
         else if constexpr (HasFields<T>::value)
         {
-            this->DescribeFields(outputStream, this->object_, T::fields);
+            this->template DescribeFields(
+                outputStream,
+                this->object_,
+                T::fields);
             outputStream << ")";
         }
         else
