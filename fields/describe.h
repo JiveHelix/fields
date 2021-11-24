@@ -99,10 +99,10 @@ auto DescribeColorizedVerbose(const T &object, int indent = -1)
 }
 
 
-template<typename T>
+template<typename T, typename Colors = DefaultColors>
 auto DescribeCompact(const T &object, int indent = -1)
 {
-    return Describe<T, NoColor, std::false_type>(object, indent);
+    return Describe<T, Colors, std::false_type>(object, indent);
 }
 
 
@@ -239,12 +239,12 @@ public:
     {
         // Use a fold expression to print a comma between each element.
         // Don't print a comma before the first member.
-        ((outputStream << (I == 0 ? "" : ", ") <<
+        ((outputStream << (I == 0 ? "[" : ", ") <<
             /* Recursively wrap each member in Describe */
             Describe<Object, Colors, VerboseTypes>(
                 array[I],
-                std::to_string(I),
-                (this->indent_ < 0) ? -1 : this->indent_ + 1)),
+                (this->indent_ < 0) ? -1 : this->indent_ + 1)
+            << (I == N - 1 ? "]" : "")),
          ...);
 
         return outputStream;

@@ -8,47 +8,265 @@
   * @copyright Jive Helix
   * Licensed under the MIT license. See LICENSE file.
   */
+
 #pragma once
 
 #include "fields/core.h"
+#include "jive/comparison_operators.h"
+#include "jive/equal.h"
+#include "jive/begin.h"
+
 
 namespace fields
 {
 
-template<typename T>
-std::enable_if_t<HasFields<T>::value, bool>
+namespace detail
+{
+    template<ssize_t precision, typename T>
+    bool Equal(const T& value, const T& other)
+    {
+        if constexpr (fields::HasFields<T>::value)
+        {
+            // Use the operator== of the fields class.
+            return value == other;
+        }
+        else
+        {
+            if constexpr (precision >= 0)
+            {
+                return jive::DigitsEqual<T, precision>{}(value, other);
+            }
+            else
+            {
+                return value == other;
+            }
+        }
+    }
+
+    template<ssize_t precision, typename T, typename Enable = void>
+    class Compare {};
+
+    template <ssize_t precision, typename T>
+    class Compare<
+        precision,
+        T,
+        typename std::enable_if_t<
+            std::is_array_v<T>
+        >
+    >
+    {
+    public:
+        Compare(const T &value): value_(value) {}
+
+        bool operator<(const Compare &other) const
+        {
+            return std::lexicographical_compare(
+                jive::Begin(this->value_),
+                jive::End(this->value_),
+                jive::Begin(other.value_),
+                jive::End(other.value_));
+        }
+
+        bool operator>(const Compare &other) const
+        {
+            return std::lexicographical_compare(
+                jive::Begin(this->value_),
+                jive::End(this->value_),
+                jive::Begin(other.value_),
+                jive::End(other.value_),
+                std::greater{});
+        }
+
+        bool operator==(const Compare &other) const
+        {
+            using ValueType = std::remove_all_extents_t<T>;
+
+            return std::equal(
+                jive::Begin(this->value_),
+                jive::End(this->value_),
+                jive::Begin(other.value_),
+                jive::End(other.value_),
+                Equal<precision, ValueType>);
+        }
+
+        bool operator!=(const Compare &other) const
+        {
+            return !(*this == other);
+        }
+
+        bool operator<=(const Compare &other) const
+        {
+            return !(*this > other);
+        }
+
+        bool operator>=(const Compare &other) const
+        {
+            return !(*this < other);
+        }
+
+    private:    
+        const T &value_;
+    };
+
+
+    template<ssize_t precision, typename T>
+    class Compare<
+        precision,
+        T,
+        typename std::enable_if_t<
+            !std::is_array_v<T>
+        >
+    >
+    {
+    public:
+        Compare(const T &value): value_(value) {}
+        
+        bool operator<(const Compare &other) const
+        {
+            return this->value_ < other.value_;
+        }
+
+        bool operator>(const Compare &other) const
+        {
+            return this->value_ > other.value_;
+        }
+
+        bool operator==(const Compare &other) const
+        {
+            return Equal<precision>(this->value_, other.value_);
+        }
+
+        bool operator!=(const Compare &other) const
+        {
+            return !(*this == other);
+        }
+
+        bool operator<=(const Compare &other) const
+        {
+            return this->value_ <= other.value_;
+        }
+
+        bool operator>=(const Compare &other) const
+        {
+            return this->value_ >= other.value_;
+        }
+
+    private:    
+        const T &value_;
+    };
+
+    // Optionally, a class can name itself
+    template<typename, typename = void>
+    struct HasPrecision: std::false_type {};
+
+
+    template<typename T>
+    struct HasPrecision<
+        T,
+        std::void_t<
+            std::enable_if_t<
+                std::is_convertible_v<decltype(T::precision), ssize_t>
+            >
+        >
+    > : std::true_type {};
+
+    template<typename T, typename = void>
+    struct Precision
+    {
+        static constexpr ssize_t value = -1;
+    };
+
+
+    template<typename T>
+    struct Precision<
+        T,
+        std::void_t<
+            std::enable_if_t<HasPrecision<T>::value>
+        >
+    >
+    {
+        static constexpr ssize_t value = T::precision;
+    };
+
+
+    template<ssize_t precision, typename T>
+    auto MakeCompare(const T &value)
+    {
+        return Compare<precision, T>(value);
+    }
+
+    template <typename T, std::size_t... I>
+    constexpr auto ComparisonTuple(
+            const T &object,
+            std::index_sequence<I...>)
+    {
+        return std::make_tuple(
+            MakeCompare<Precision<T>::value>(
+                object.*(std::get<I>(T::fields).member))...);
+    }
+
+    template <typename T>
+    constexpr auto ComparisonTuple(const T &object)
+    {
+        static_assert(fields::HasFields<T>::value, "Missing required fields tuple");
+
+        constexpr auto propertyCount =
+            std::tuple_size<decltype(T::fields)>::value;
+
+        return ComparisonTuple(
+            object,
+            std::make_index_sequence<propertyCount>{});
+    }
+}
+
+} // end namespace fields
+
+
+template <typename T>
+std::enable_if_t<
+    (fields::HasFields<T>::value && !jive::HasEqualTo<T>::value),
+    bool>
 operator==(const T &left, const T &right)
 {
-    return GetFields(left) == GetFields(right);
+    return fields::detail::ComparisonTuple(left)
+        == fields::detail::ComparisonTuple(right);
 }
 
-
-template<typename T>
-std::enable_if_t<HasFields<T>::value, bool>
+template <typename T>
+std::enable_if_t<
+    (fields::HasFields<T>::value && !jive::HasNotEqualTo<T>::value),
+    bool>
 operator!=(const T &left, const T &right)
 {
-    return GetFields(left) != GetFields(right);
+    return fields::detail::ComparisonTuple(left)
+        != fields::detail::ComparisonTuple(right);
 }
 
-
-template<typename T>
-std::enable_if_t<HasFields<T>::value, bool>
-operator<(const T &left, const T &right)
+template <typename T>
+std::
+    enable_if_t<(fields::HasFields<T>::value && !jive::HasLess<T>::value), bool>
+    operator<(const T &left, const T &right)
 {
-    return GetFields(left) < GetFields(right);
+    return fields::detail::ComparisonTuple(left)
+        < fields::detail::ComparisonTuple(right);
 }
 
-
-template<typename T>
-std::enable_if_t<HasFields<T>::value, bool>
+template <typename T>
+std::enable_if_t<
+    (fields::HasFields<T>::value && !jive::HasGreater<T>::value),
+    bool>
 operator>(const T &left, const T &right)
 {
-    return GetFields(left) > GetFields(right);
+    return fields::detail::ComparisonTuple(left)
+        > fields::detail::ComparisonTuple(right);
 }
 
 
 template<typename T>
-std::enable_if_t<HasFields<T>::value, bool>
+std::enable_if_t<
+    (fields::HasFields<T>::value && !jive::HasLessEqual<T>::value),
+    bool
+>
 operator<=(const T &left, const T &right)
 {
     return !(left > right);
@@ -56,10 +274,11 @@ operator<=(const T &left, const T &right)
 
 
 template<typename T>
-std::enable_if_t<HasFields<T>::value, bool>
+std::enable_if_t<
+    (fields::HasFields<T>::value && !jive::HasGreaterEqual<T>::value),
+    bool
+>
 operator>=(const T &left, const T &right)
 {
     return !(left < right);
 }
-
-} // end namespace fields

@@ -14,8 +14,9 @@
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
-#define ENABLE_VERBOSE_TYPES
+#define USE_PRECISE_DIGITS
 #include "fields/fields.h"
 
 // Silence a single warning in nlohmann/json.hpp
@@ -26,12 +27,6 @@
 
 using json = nlohmann::json;
 
-namespace fields
-{
-
-// If we want ADL (Argument-dependent Lookup) to resolve the comparison
-// operators defined in the fields namespace, we need to also add our classes
-// to the fields namespace.
 
 struct Foo
 {
@@ -40,9 +35,9 @@ struct Foo
     double z;
 
     constexpr static auto fields = std::make_tuple(
-        Field(&Foo::x, "x"),
-        Field(&Foo::y, "y"),
-        Field(&Foo::z, "z"));
+        fields::Field(&Foo::x, "x"),
+        fields::Field(&Foo::y, "y"),
+        fields::Field(&Foo::z, "z"));
 
     constexpr static auto fieldsTypeName = "Foo";
 
@@ -54,6 +49,7 @@ struct Foo
     }
 #endif
 
+    static constexpr size_t precision = 3;
 };
 
 
@@ -100,9 +96,9 @@ struct Bar
     }
 
     constexpr static auto fields = std::make_tuple(
-        Field(&Bar::first, "first", "primeiro", "primis"),
-        Field(&Bar::second, "second", "segundo"),
-        Field(&Bar::velocity, "velocity"));
+        fields::Field(&Bar::first, "first", "primeiro", "primis"),
+        fields::Field(&Bar::second, "second", "segundo"),
+        fields::Field(&Bar::velocity, "velocity"));
 
     constexpr static auto fieldsTypeName = "Bar";
 };
@@ -110,9 +106,9 @@ struct Bar
 
 struct Wobble
 {
-    uint8_t alpha[4];
+    uint8_t alpha[2][4];
     Bar frob;
-    Foo flub;
+    Foo flub[2][2];
     std::string message;
     std::vector<Foo> numbers;
     std::map<std::string, Foo> fooByName;
@@ -124,24 +120,17 @@ struct Wobble
     }
 
     constexpr static auto fields = std::make_tuple(
-        Field(&Wobble::alpha, "alpha"),
-        Field(&Wobble::frob, "anyNameYouWant"),
-        Field(&Wobble::flub, "Even with spaces"),
-        Field(&Wobble::message, "A message for you"),
-        Field(&Wobble::numbers, "numbers"),
-        Field(&Wobble::fooByName, "fooByName"));
+        fields::Field(&Wobble::alpha, "alpha"),
+        fields::Field(&Wobble::frob, "any name you want"),
+        fields::Field(&Wobble::flub, "flub"),
+        fields::Field(&Wobble::message, "message"),
+        fields::Field(&Wobble::numbers, "numbers"),
+        fields::Field(&Wobble::fooByName, "fooByName"));
 
     constexpr static auto fieldsTypeName = "Wobble";
 };
 
 
-} // end namespace fields
-
-using fields::Wobble;
-using fields::Bar;
-using fields::Foo;
-
-#include <iostream>
 
 struct AlteredColors: public fields::DefaultColors
 {
@@ -172,9 +161,11 @@ void PrintFieldType(Field &&field)
 int main()
 {
     Wobble original{
-        {'x', 'v', 'u', 't'},
+        {{'x', 'v', 'u', 't'}, {'s', 'r', 'q', 'p'}},
         {{13, 42000, 56.0}, {-19000, 15, 3.14}, 9.80},
-        {56, 88, 3.1415926},
+        {
+            {{56, 88, 3.1415926}, {57, 89, 4.1415926}},
+            {{58, 90, 5.1415926}, {59, 60, 6.1415926}}},
         "This is my message",
         {{0, 1, 2}, {117, -67, 13e-9}, {117 * 2, -67 * 2, 13e-9 * 2}},
         {}};
@@ -186,23 +177,38 @@ int main()
     auto unstructured{fields::Unstructure<json>(original)};
 
     // Restructure using one of the alternate names for 'first': 'primis'
-    auto first = unstructured["anyNameYouWant"]["first"];
-    unstructured["anyNameYouWant"].erase("first");
-    unstructured["anyNameYouWant"]["primis"] = first;
+    auto first = unstructured["any name you want"]["first"];
+    unstructured["any name you want"].erase("first");
+    unstructured["any name you want"]["primis"] = first;
+
+    std::cout << "\nunstructured:\n" << std::setw(4) << unstructured
+        << std::endl;
 
     auto asString = unstructured.dump();
 
-    std::cout << "\nunstructured: " << asString << std::endl;
-
     auto recoveredUnstructured = json::parse(asString);
 
+    std::cout << "recoveredUnstructured:\n" << std::setw(4)
+        << recoveredUnstructured << std::endl;
+
     auto recovered = fields::Structure<Wobble>(recoveredUnstructured);
+
+
+    std::cout << "\nDescribeColorizedVerbose with indent argument "
+              << "(multi-line with type information):"
+              << std::endl;
+
+    std::cout << fields::DescribeColorizedVerbose(recovered, 0) << std::endl;
+
 
     std::cout << std::boolalpha
               << "\nrecovered == original: " << (recovered == original)
               << std::endl;
 
-    std::cout << "\nrecovered: " << fields::Unstructure<json>(recovered).dump()
+    recovered.flub[1][0].z = 5.140;
+
+    std::cout << std::boolalpha
+              << "\nrecovered == original: " << (recovered == original)
               << std::endl;
 
     std::cout << "\nDescribeColorized without indent argument "
@@ -210,12 +216,6 @@ int main()
               << std::endl;
 
     std::cout << fields::DescribeColorized(recovered) << std::endl;
-
-    std::cout << "\nDescribeColorizedVerbose with indent argument "
-              << "(multi-line with type information):"
-              << std::endl;
-
-    std::cout << fields::DescribeColorizedVerbose(recovered, 0) << std::endl;
 
     std::cout << "\nDescribeColorized (no type information):" << std::endl;
     std::cout << fields::DescribeColorized(recovered, 0) << std::endl;

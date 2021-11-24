@@ -100,10 +100,10 @@ struct ImplementsUnstructure<
     Json,
     std::void_t<
         std::enable_if_t<
-            std::is_same<
+            std::is_same_v<
                 Json,
                 decltype(std::declval<T>().template Unstructure<Json>())
-            >::value
+            >
         >
     >
 >: std::true_type {};
@@ -163,6 +163,61 @@ template<typename Json, typename T>
 Json Unstructure(const T &structured);
 
 
+template<typename T, typename Enable = void>
+struct Dimensional {};
+
+template<typename T>
+struct Dimensional<
+    T,
+    std::enable_if_t<std::is_array_v<T>>
+>
+{
+    using type = std::vector<
+        typename Dimensional<
+            typename std::remove_extent_t<T>
+        >::type
+    >;
+};
+
+template<typename T>
+struct Dimensional<
+    T,
+    std::enable_if_t<!std::is_array_v<T>>
+>
+{
+    using type = T;
+};
+
+
+template<typename T>
+typename Dimensional<T>::type UnstructureArray(const T &structured)
+{
+    static_assert(std::is_array_v<T>, "Must be an array");
+
+    static constexpr size_t size = std::extent_v<T>;
+
+    if constexpr (std::rank_v<T> == 1)
+    {
+        using Subtype = typename std::remove_extent_t<T>;
+        const Subtype * begin = &structured[0];
+        const Subtype * end = begin + size;
+        std::vector<Subtype> asVector{begin, end};
+        return asVector;
+    }
+    else
+    {
+        typename Dimensional<T>::type result;
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            result.push_back(UnstructureArray(structured[i])); 
+        }
+
+        return result;
+    }
+}
+
+
 template<typename Json, typename T>
 Json UnstructureFromFields(const T &structured)
 {
@@ -175,19 +230,7 @@ Json UnstructureFromFields(const T &structured)
 
             if constexpr (std::is_array_v<Type>)
             {
-                // The field is an array, so it cannot be assigned.
-                static_assert(
-                    std::rank_v<Type> == 1,
-                    "Currently supports only 1-dimensional arrays.");
-
-                // The field is an array, so it cannot be assigned.
-                using Subtype = std::remove_all_extents_t<Type>;
-                static constexpr auto size = std::extent_v<Type>;
-
-                const Subtype * begin = &(structured.*(field.member))[0];
-                const Subtype * end = begin + size;
-
-                std::vector<Subtype> asVector{begin, end};
+                auto asVector = UnstructureArray(structured.*(field.member));
                 result[field.name] = Unstructure<Json>(asVector);
             }
             else
@@ -300,6 +343,46 @@ T Structure(const Json &unstructured);
 
 
 template<typename T, typename Json>
+void StructureInPlace(T &result, const Json &unstructured)
+{
+    if constexpr (std::is_array_v<T>)
+    {
+        static constexpr auto size = std::extent_v<T>;
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            StructureInPlace(
+                result[i],
+                unstructured.at(i));
+        }
+    }
+    else
+    {
+        result = Structure<T>(unstructured);
+    }
+}
+
+
+template<typename T>
+void InitializeInPlace(T &result)
+{
+    if constexpr (std::is_array_v<T>)
+    {
+        static constexpr auto size = std::extent_v<T>;
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            InitializeInPlace(result[i]);
+        }
+    }
+    else
+    {
+        result = Default<T>();
+    }
+}
+
+
+template<typename T, typename Json>
 void StructureFromFields(T &result, const Json &unstructured)
 {
     if constexpr (HasFields<T>::value)
@@ -311,57 +394,19 @@ void StructureFromFields(T &result, const Json &unstructured)
         ForEachField<T>(
             [&](const auto &field)
             {
-                using Type = FieldType<decltype(field)>;
-
-                if constexpr (std::is_array_v<Type>)
-                {
-                    // The field is an array, so it cannot be assigned.
-                    static_assert(
-                        std::rank_v<Type> == 1,
-                        "Currently supports only 1-dimensional arrays.");
-                }
-
                 auto unstructuredMember = FindMember(field, unstructured);
 
                 if (unstructuredMember)
                 {
-                    // The field was found.
-                    if constexpr (std::is_array_v<Type>)
-                    {
-                        // The field is an array, so it cannot be assigned.
-                        using Subtype = std::remove_all_extents_t<Type>;
-                        static constexpr auto size = std::extent_v<Type>;
-
-                        for (size_t i = 0; i < size; ++i)
-                        {
-                            (result.*(field.member))[i] =
-                                Structure<Subtype>(unstructuredMember->at(i));
-                        }
-                    }
-                    else
-                    {
-                        result.*(field.member) =
-                            Structure<Type>(*unstructuredMember);
-                    }
+                    // Reconstruct the object from the unstructured data.
+                    StructureInPlace(
+                        result.*(field.member),
+                        *unstructuredMember);
                 }
                 else
                 {
                     // Initialize missing field to its default value
-                    if constexpr (std::is_array_v<Type>)
-                    {
-                        // The field is an array, so it cannot be assigned.
-                        using Subtype = std::remove_all_extents_t<Type>;
-                        static constexpr auto size = std::extent_v<Type>;
-
-                        for (size_t i = 0; i < size; ++i)
-                        {
-                            (result.*(field.member))[i] = Default<Subtype>();
-                        }
-                    }
-                    else
-                    {
-                        result.*(field.member) = Default<Type>();
-                    }
+                    InitializeInPlace(result.*(field.member));
                 }
             });
     }
@@ -433,7 +478,7 @@ T Structure(const Json &unstructured)
 template<typename T, typename Json, typename GetDefault>
 T Get(const Json &json, const std::string &key, GetDefault getDefault)
 {
-    static_assert(std::is_same<T, decltype(getDefault())>::value);
+    static_assert(std::is_same_v<T, decltype(getDefault())>);
 
     if (json.count(key) == 1)
     {
