@@ -27,6 +27,7 @@
 
 using json = nlohmann::json;
 
+#include "fields/comparisons.h"
 
 struct Foo
 {
@@ -225,8 +226,6 @@ int main()
 
     std::cout << "\nDescribeAlteredVerbose: " << std::endl;
     std::cout << DescribeAlteredVerbose(recovered, 0) << std::endl;
-
-    PrintFieldType(std::get<0>(Wobble::fields));
 
     return 0;
 }

@@ -16,6 +16,7 @@
 
 #define USE_PRECISE_DIGITS
 #include "fields/fields.h"
+#include "fields/comparisons.h"
 
 #include "jive/begin.h"
 
