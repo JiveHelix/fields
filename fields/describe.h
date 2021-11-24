@@ -13,6 +13,7 @@
 
 #include <ostream>
 #include <sstream>
+#include <cassert>
 #include "fields/core.h"
 #include "jive/describe_type.h"
 #include "jive/colorize.h"
@@ -289,7 +290,13 @@ public:
     {
         constexpr auto itemCount = std::tuple_size<Fields>::value;
 
+#if defined _MSC_VER && _MSC_VER <= 1929
+        // MSVC is confused by correct C++ syntax...
+        return this->template Describe::DescribeFields(
+#else
+        // Clang and GCC are not
         return this->template DescribeFields(
+#endif
             outputStream,
             object,
             fields,
@@ -322,10 +329,18 @@ public:
         }
         else if constexpr (HasFields<T>::value)
         {
-            this->template DescribeFields(
+
+#if defined _MSC_VER && _MSC_VER <= 1929
+        // MSVC is confused by correct C++ syntax...
+        this->template Describe::DescribeFields(
+#else
+        // Clang and GCC are not
+        this->template DescribeFields(
+#endif
                 outputStream,
                 this->object_,
                 T::fields);
+
             outputStream << ")";
         }
         else

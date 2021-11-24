@@ -1,7 +1,7 @@
 /**
   * @file compare.h
   * 
-  * @brief Implements comparison operator overloads for fields classes.
+  * @brief Implements details for comparison operators.
   * 
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 01 May 2020
@@ -15,7 +15,6 @@
 #include "jive/comparison_operators.h"
 #include "jive/equal.h"
 #include "jive/begin.h"
-
 
 namespace fields
 {
@@ -220,65 +219,3 @@ namespace detail
 }
 
 } // end namespace fields
-
-
-template <typename T>
-std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasEqualTo<T>::value),
-    bool>
-operator==(const T &left, const T &right)
-{
-    return fields::detail::ComparisonTuple(left)
-        == fields::detail::ComparisonTuple(right);
-}
-
-template <typename T>
-std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasNotEqualTo<T>::value),
-    bool>
-operator!=(const T &left, const T &right)
-{
-    return fields::detail::ComparisonTuple(left)
-        != fields::detail::ComparisonTuple(right);
-}
-
-template <typename T>
-std::
-    enable_if_t<(fields::HasFields<T>::value && !jive::HasLess<T>::value), bool>
-    operator<(const T &left, const T &right)
-{
-    return fields::detail::ComparisonTuple(left)
-        < fields::detail::ComparisonTuple(right);
-}
-
-template <typename T>
-std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasGreater<T>::value),
-    bool>
-operator>(const T &left, const T &right)
-{
-    return fields::detail::ComparisonTuple(left)
-        > fields::detail::ComparisonTuple(right);
-}
-
-
-template<typename T>
-std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasLessEqual<T>::value),
-    bool
->
-operator<=(const T &left, const T &right)
-{
-    return !(left > right);
-}
-
-
-template<typename T>
-std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasGreaterEqual<T>::value),
-    bool
->
-operator>=(const T &left, const T &right)
-{
-    return !(left < right);
-}
