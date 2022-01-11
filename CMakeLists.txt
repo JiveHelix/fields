@@ -5,7 +5,7 @@ if(NOT DEFINED PROJECT_NAME)
     set(FIELDS_NOT_SUBPROJECT ON)
 endif()
 
-include(cmake/DefineProjectOnce.cmake)
+include(cmake_includes/DefineProjectOnce.cmake)
 
 define_project_once(fields)
 
@@ -14,7 +14,7 @@ project(fields CXX)
 if(FIELDS_NOT_SUBPROJECT)
     # This is the top-level project
     set(CONAN_EXTRA_REQUIRES "nlohmann_json/3.7.3")
-    include(cmake/Standalone.cmake)
+    include(cmake_includes/Standalone.cmake)
     option(ENABLE_UNITY "Enable Unity builds of projects" OFF)
 endif()
 

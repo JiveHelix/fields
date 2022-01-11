@@ -1,3 +1,6 @@
 [submodule "external/jive"]
 	path = external/jive
 	url = https://github.com/JiveHelix/jive.git
+[submodule "cmake_includes"]
+	path = cmake_includes
+	url = https://github.com/JiveHelix/cmake_includes.git
