@@ -1,43 +1,25 @@
 cmake_minimum_required(VERSION 3.15)
 
-# detect whether fields has been added as a subproject
-if(NOT DEFINED PROJECT_NAME)
-    set(FIELDS_NOT_SUBPROJECT ON)
-endif()
-
-include(cmake_includes/DefineProjectOnce.cmake)
-
-define_project_once(fields)
-
 project(fields CXX)
 
-if(FIELDS_NOT_SUBPROJECT)
-    # This is the top-level project
-    set(CONAN_EXTRA_REQUIRES "nlohmann_json/3.7.3")
-    include(cmake_includes/Standalone.cmake)
-    option(ENABLE_UNITY "Enable Unity builds of projects" OFF)
-endif()
+include(${CMAKE_CURRENT_LIST_DIR}/cmake_includes/setup_project.cmake)
+setup_project()
 
-add_subdirectory(external)
 add_subdirectory(fields)
 
-if(FIELDS_NOT_SUBPROJECT)
-
-    add_subdirectory(examples)
-
-    if(ENABLE_TESTING)
-        enable_testing()
+if (ENABLE_TESTING)
+    if (${PROJECT_IS_TOP_LEVEL} OR ${RECURSIVE_BUILD_TESTS})
         add_subdirectory(test)
-    endif()
+    endif ()
+endif ()
 
-elseif(RECURSIVE_BUILD_TESTS AND ENABLE_TESTING)
+if (${PROJECT_IS_TOP_LEVEL})
+    option(
+        BUILD_EXAMPLES
+        "Build the example targets"
+        ${CONAN_USER_INFO_BUILD_EXAMPLES})
 
-    # A parent project has requested tests.
-    add_subdirectory(test)
-
-endif()
-
-if(ENABLE_UNITY)
-  # Add for any project you want to apply unity builds for
-  set_target_properties(fields PROPERTIES UNITY_BUILD ON)
-endif()
+    if (${BUILD_EXAMPLES})
+        add_subdirectory(examples)
+    endif ()
+endif ()
