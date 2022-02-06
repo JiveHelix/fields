@@ -33,7 +33,9 @@ namespace detail
         {
             if constexpr (precision >= 0)
             {
-                return jive::DigitsEqual<T, precision>{}(value, other);
+                return jive::DigitsEqual<
+		    T,
+		    static_cast<size_t>(precision)>{}(value, other);
             }
             else
             {

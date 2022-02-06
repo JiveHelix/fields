@@ -28,13 +28,13 @@ struct Field
     using Type = T;
 
     constexpr Field(
-        T Class::*member,
-        const char* name,
-        OtherNames ...otherNames)
+        T Class::*inMember,
+        const char* inName,
+        OtherNames ...inOtherNames)
         :
-        member{member},
-        name{name},
-        otherNames{otherNames...}
+        member{inMember},
+        name{inName},
+        otherNames{inOtherNames...}
     {
 
     }

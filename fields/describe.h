@@ -172,8 +172,7 @@ public:
         return std::to_string(key);
     }
 
-    template<>
-    static std::string KeyToString<std::string>(const std::string &key)
+    static std::string KeyToString(const std::string &key)
     {
         return key;
     }
