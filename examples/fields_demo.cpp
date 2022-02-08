@@ -19,11 +19,15 @@
 #define USE_PRECISE_DIGITS
 #include "fields/fields.h"
 
+#ifndef _WIN32
 // Silence a single warning in nlohmann/json.hpp
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
+#endif
 #include <nlohmann/json.hpp>
+#ifndef _WIN32
 #pragma GCC diagnostic pop
+#endif
 
 using json = nlohmann::json;
 

@@ -7,7 +7,7 @@ setup_project()
 
 add_subdirectory(fields)
 
-if (ENABLE_TESTING)
+if (${ENABLE_TESTING})
     if (${PROJECT_IS_TOP_LEVEL} OR ${RECURSIVE_BUILD_TESTS})
         add_subdirectory(test)
     endif ()
@@ -17,7 +17,7 @@ if (${PROJECT_IS_TOP_LEVEL})
     option(
         BUILD_EXAMPLES
         "Build the example targets"
-        ${CONAN_USER_INFO_BUILD_EXAMPLES})
+        ${ENABLES_DEFAULT})
 
     if (${BUILD_EXAMPLES})
         add_subdirectory(examples)

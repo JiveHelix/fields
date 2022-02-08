@@ -5,10 +5,6 @@ target_include_directories(fields INTERFACE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(fields INTERFACE CONAN_PKG::jive)
 
-install(
-    DIRECTORY ${PROJECT_SOURCE_DIR}/fields
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 target_sources(
     fields
     INTERFACE
@@ -20,3 +16,7 @@ target_sources(
     fields.h
     marshal.h
     network_byte_order.h)
+
+install(
+    DIRECTORY ${PROJECT_SOURCE_DIR}/fields
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

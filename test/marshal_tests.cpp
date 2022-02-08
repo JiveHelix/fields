@@ -7,7 +7,7 @@
 #include <catch2/catch.hpp>
 #include "fields/marshal.h"
 #include "jive/testing/gettys_words.h"
-#include "jive/testing/cast_limits.h"
+#include "jive/testing/generator_limits.h"
 
 
 TEMPLATE_TEST_CASE(
@@ -21,8 +21,8 @@ TEMPLATE_TEST_CASE(
         take(
             30,
             random(
-                CastLimits<TestType>::Min(),
-                CastLimits<TestType>::Max())));
+                GeneratorLimits<TestType>::Lowest(),
+                GeneratorLimits<TestType>::Max())));
 
     auto marshaled = fields::Marshal(value);
     TestType recovered = marshaled;
@@ -63,12 +63,13 @@ TEMPLATE_TEST_CASE(
     int64_t,
     uint64_t)
 {
-    auto value = GENERATE(
-        take(
-            30,
-            random(
-                CastLimits<TestType>::Min(),
-                CastLimits<TestType>::Max())));
+    using Limits = GeneratorLimits<TestType>;
+
+    auto value = static_cast<TestType>(
+        GENERATE(
+            take(
+                30,
+                random(Limits::Lowest(), Limits::Max()))));
 
     auto marshaled = fields::Marshal(value);
     TestType recovered = value;
@@ -115,27 +116,34 @@ TEMPLATE_TEST_CASE(
     int64_t,
     uint64_t)
 {
+    using Limits = GeneratorLimits<TestType>;
+
     auto values = GENERATE(
         take(
             10,
             chunk(
                 3,
-                random(
-                    CastLimits<TestType>::Min(),
-                    CastLimits<TestType>::Max()))));
+                random(Limits::Lowest(), Limits::Max()))));
+
+    std::vector<TestType> valuesAsType;
+
+    for (auto value: values)
+    {
+        valuesAsType.push_back(static_cast<TestType>(value));
+    }
 
     auto marshal = fields::Marshal();
-    marshal["firstValue"] = values[0];
-    marshal["secondValue"] = values[1];
-    marshal["thirdValue"] = values[2];
+    marshal["firstValue"] = valuesAsType[0];
+    marshal["secondValue"] = valuesAsType[1];
+    marshal["thirdValue"] = valuesAsType[2];
 
     TestType firstValue = marshal["firstValue"];
     TestType secondValue = marshal["secondValue"];
     TestType thirdValue = marshal["thirdValue"];
 
-    REQUIRE(firstValue == Approx(values[0]));
-    REQUIRE(secondValue == Approx(values[1]));
-    REQUIRE(thirdValue == Approx(values[2]));
+    REQUIRE(firstValue == Approx(valuesAsType[0]));
+    REQUIRE(secondValue == Approx(valuesAsType[1]));
+    REQUIRE(thirdValue == Approx(valuesAsType[2]));
 }
 
 
@@ -154,12 +162,13 @@ TEMPLATE_TEST_CASE(
     int64_t,
     uint64_t)
 {
-    auto value = GENERATE(
-        take(
-            10,
-            random(
-                CastLimits<TestType>::Min(),
-                CastLimits<TestType>::Max())));
+    using Limits = GeneratorLimits<TestType>;
+
+    auto value = static_cast<TestType>(
+        GENERATE(
+            take(
+                10,
+                random(Limits::Lowest(), Limits::Max()))));
 
     auto marshal = fields::Marshal();
     marshal["levelOne"]["levelTwo"]["myValue"] = value;
