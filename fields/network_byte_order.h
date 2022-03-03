@@ -25,7 +25,7 @@ template<
 void HostToNetwork(T &object)
 {
     ForEachField<T>(
-        [&](auto &field)
+        [&](auto &field) -> void
         {
             using Type = FieldType<decltype(field)>;
 
@@ -75,7 +75,7 @@ template<
 void NetworkToHost(T &object)
 {
     ForEachField<T>(
-        [&](auto &field)
+        [&](auto &field) -> void
         {
             using Type = FieldType<decltype(field)>;
 

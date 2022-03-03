@@ -224,7 +224,7 @@ Json UnstructureFromFields(const T &structured)
     Json result;
 
     ForEachField<T>(
-        [&](const auto &field)
+        [&](const auto &field) -> void
         {
             using Type = FieldType<decltype(field)>;
 
@@ -315,7 +315,7 @@ const Json * FindMember(const Field &field, const Json &unstructured)
 
         if (matchingName)
         {
-            return &unstructured[matchingName.value()];
+            return &unstructured[*matchingName];
         }
     }
 
@@ -392,7 +392,7 @@ void StructureFromFields(T &result, const Json &unstructured)
         // here. Members that do not implement fields will fall through to the
         // default initialization below.
         ForEachField<T>(
-            [&](const auto &field)
+            [&](const auto &field) -> void
             {
                 auto unstructuredMember = FindMember(field, unstructured);
 
