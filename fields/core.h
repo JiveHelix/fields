@@ -279,9 +279,13 @@ Json Unstructure(const T &structured)
 
         return result;
     }
+    else if constexpr (jive::IsBitset<T>::value)
+    {
+        return structured.to_ullong();
+    }
     else
     {
-        // Members without fields or Unstructure method must be convertible to
+        // All other members must be implicitly convertible to
         // the json value.
         return structured;
     }
@@ -431,13 +435,18 @@ void StructureFromFields(T &result, const Json &unstructured)
     }
     else
     {
-        // Members without fields must be convertible from the json value.
         if constexpr (jive::IsString<T>::value)
         {
             result = static_cast<std::string>(unstructured);
         }
+        else if constexpr (jive::IsBitset<T>::value)
+        {
+            result = static_cast<unsigned long long>(unstructured);
+        }
         else
         {
+            // Other members without fields must be convertible from the json
+            // value.
             result = unstructured;
         }
     }
