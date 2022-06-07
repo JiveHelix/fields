@@ -34,8 +34,8 @@ namespace detail
             if constexpr (precision >= 0)
             {
                 return jive::DigitsEqual<
-		    T,
-		    static_cast<size_t>(precision)>{}(value, other);
+                    T,
+                    static_cast<size_t>(precision)>{}(value, other);
             }
             else
             {
@@ -209,7 +209,9 @@ namespace detail
     template <typename T>
     constexpr auto ComparisonTuple(const T &object)
     {
-        static_assert(fields::HasFields<T>::value, "Missing required fields tuple");
+        static_assert(
+            fields::HasFields<T>::value,
+            "Missing required fields tuple");
 
         constexpr auto propertyCount =
             std::tuple_size<decltype(T::fields)>::value;
@@ -218,6 +220,9 @@ namespace detail
             object,
             std::make_index_sequence<propertyCount>{});
     }
-}
+
+
+} // end namespace detail
+
 
 } // end namespace fields

@@ -46,9 +46,6 @@ void Assign(Target &target, Source &source)
         const auto &targetField,
         const auto &sourceField) -> void
     {
-        using Type = std::remove_reference_t<
-            decltype(target.*(targetField.member))>;
-
         target.*(targetField.member) = source.*(sourceField.member);
     };
 
