@@ -289,7 +289,7 @@ public:
     {
         constexpr auto itemCount = std::tuple_size<Fields>::value;
 
-#if defined _MSC_VER && _MSC_VER <= 1929
+#if defined _MSC_VER && _MSC_VER <= 1932
         // MSVC is confused by correct C++ syntax...
         return this->template Describe::DescribeFields(
 #else
@@ -329,7 +329,7 @@ public:
         else if constexpr (HasFields<T>::value)
         {
 
-#if defined _MSC_VER && _MSC_VER <= 1929
+#if defined _MSC_VER && _MSC_VER <= 1932
         // MSVC is confused by correct C++ syntax...
         this->template Describe::DescribeFields(
 #else
