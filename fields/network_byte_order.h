@@ -11,8 +11,11 @@
 
 #pragma once
 
+
+#include "jive/begin.h"
 #include "jive/endian_tools.h"
 #include "fields/core.h"
+
 
 namespace fields
 {
