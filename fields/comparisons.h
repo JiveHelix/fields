@@ -16,7 +16,7 @@
 
 template <typename T>
 std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasEqualTo<T>::value),
+    (fields::HasFields<T> && !jive::HasEqualTo<T>::value),
     bool>
 operator==(const T &left, const T &right)
 {
@@ -26,7 +26,7 @@ operator==(const T &left, const T &right)
 
 template <typename T>
 std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasNotEqualTo<T>::value),
+    (fields::HasFields<T> && !jive::HasNotEqualTo<T>::value),
     bool>
 operator!=(const T &left, const T &right)
 {
@@ -36,7 +36,7 @@ operator!=(const T &left, const T &right)
 
 template <typename T>
 std::
-    enable_if_t<(fields::HasFields<T>::value && !jive::HasLess<T>::value), bool>
+    enable_if_t<(fields::HasFields<T> && !jive::HasLess<T>::value), bool>
     operator<(const T &left, const T &right)
 {
     return fields::detail::ComparisonTuple(left)
@@ -45,7 +45,7 @@ std::
 
 template <typename T>
 std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasGreater<T>::value),
+    (fields::HasFields<T> && !jive::HasGreater<T>::value),
     bool>
 operator>(const T &left, const T &right)
 {
@@ -56,7 +56,7 @@ operator>(const T &left, const T &right)
 
 template<typename T>
 std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasLessEqual<T>::value),
+    (fields::HasFields<T> && !jive::HasLessEqual<T>::value),
     bool
 >
 operator<=(const T &left, const T &right)
@@ -67,7 +67,7 @@ operator<=(const T &left, const T &right)
 
 template<typename T>
 std::enable_if_t<
-    (fields::HasFields<T>::value && !jive::HasGreaterEqual<T>::value),
+    (fields::HasFields<T> && !jive::HasGreaterEqual<T>::value),
     bool
 >
 operator>=(const T &left, const T &right)

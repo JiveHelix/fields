@@ -24,7 +24,7 @@ namespace detail
     template<ssize_t precision, typename T>
     bool Equal(const T& value, const T& other)
     {
-        if constexpr (fields::HasFields<T>::value)
+        if constexpr (fields::HasFields<T>)
         {
             // Use the operator== of the fields class.
             return value == other;
@@ -210,7 +210,7 @@ namespace detail
     constexpr auto ComparisonTuple(const T &object)
     {
         static_assert(
-            fields::HasFields<T>::value,
+            fields::HasFields<T>,
             "Missing required fields tuple");
 
         constexpr auto propertyCount =

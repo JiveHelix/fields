@@ -23,7 +23,7 @@ namespace fields
 
 template<
     typename T,
-    typename std::enable_if_t<HasFields<T>::value, int> = 0
+    typename std::enable_if_t<HasFields<T>, int> = 0
 >
 void HostToNetwork(T &object)
 {
@@ -32,7 +32,7 @@ void HostToNetwork(T &object)
         {
             using Type = FieldType<decltype(field)>;
 
-            if constexpr (HasFields<Type>::value)
+            if constexpr (HasFields<Type>)
             {
                 HostToNetwork(object.*(field.member));
             }
@@ -40,7 +40,7 @@ void HostToNetwork(T &object)
             {
                 using Subtype = std::remove_all_extents_t<Type>;
 
-                if constexpr (HasFields<Subtype>::value)
+                if constexpr (HasFields<Subtype>)
                 {
                     auto begin = jive::Begin(object.*(field.member));
                     auto end = jive::End(object.*(field.member));
@@ -73,7 +73,7 @@ void HostToNetwork(T &object)
 
 template<
     typename T,
-    typename std::enable_if_t<HasFields<T>::value, int> = 0
+    typename std::enable_if_t<HasFields<T>, int> = 0
 >
 void NetworkToHost(T &object)
 {
@@ -82,7 +82,7 @@ void NetworkToHost(T &object)
         {
             using Type = FieldType<decltype(field)>;
 
-            if constexpr (HasFields<Type>::value)
+            if constexpr (HasFields<Type>)
             {
                 NetworkToHost(object.*(field.member));
             }
@@ -90,7 +90,7 @@ void NetworkToHost(T &object)
             {
                 using Subtype = std::remove_all_extents_t<Type>;
 
-                if constexpr (HasFields<Subtype>::value)
+                if constexpr (HasFields<Subtype>)
                 {
                     auto begin = jive::Begin(object.*(field.member));
                     auto end = jive::End(object.*(field.member));

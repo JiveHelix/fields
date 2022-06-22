@@ -49,53 +49,65 @@ struct Field
 // define a static tuple of Fields describing the class members that will
 // participate.
 template<typename, typename = std::void_t<>>
-struct HasFields: std::false_type {};
-
+struct HasFields_: std::false_type {};
 
 template<typename T>
-struct HasFields<T, std::void_t<decltype(T::fields)>
+struct HasFields_<T, std::void_t<decltype(T::fields)>
 > : std::true_type {};
+
+template<typename T>
+inline constexpr bool HasFields = HasFields_<T>::value;
+
 
 // Optionally, a class can name itself
 template<typename, typename = std::void_t<>>
-struct HasFieldsTypeName: std::false_type {};
-
+struct HasFieldsTypeName_: std::false_type {};
 
 template<typename T>
-struct HasFieldsTypeName<T, std::void_t<decltype(T::fieldsTypeName)>
+struct HasFieldsTypeName_<T, std::void_t<decltype(T::fieldsTypeName)>
 > : std::true_type {};
+
+template<typename T>
+inline constexpr bool HasFieldsTypeName = HasFieldsTypeName_<T>::value;
 
 
 template<typename T, typename = std::void_t<>>
-struct ImplementsAfterFields: std::false_type {};
+struct ImplementsAfterFields_: std::false_type {};
 
 template<typename T>
-struct ImplementsAfterFields<
+struct ImplementsAfterFields_<
     T,
     std::void_t<decltype(std::declval<T>().AfterFields())>
 > : std::true_type {};
+
+template<typename T>
+inline constexpr bool ImplementsAfterFields = ImplementsAfterFields_<T>::value;
 
 
 // Optionally, a class can provide it's own Structure method.
 // It must be a static method that takes a single reference to a Json instance.
 template<typename T, typename Json, typename = void>
-struct ImplementsStructure: std::false_type {};
+struct ImplementsStructure_: std::false_type {};
 
 template<typename T, typename Json>
-struct ImplementsStructure<
+struct ImplementsStructure_<
     T,
     Json,
     std::void_t<decltype(T::Structure(std::declval<Json>()))>
 > : std::true_type {};
 
+template<typename T, typename Json>
+inline constexpr bool ImplementsStructure =
+    ImplementsStructure_<T, Json>::value;
+
 
 // Optionally, a class can provide it's own Unstructure method, as a non-static
 // class method without arguments, and returning a Json instance.
 template<typename T, typename Json, typename = void>
-struct ImplementsUnstructure: std::false_type {};
+struct ImplementsUnstructure_: std::false_type {};
 
 template<typename T, typename Json>
-struct ImplementsUnstructure<
+struct ImplementsUnstructure_<
     T,
     Json,
     std::void_t<
@@ -108,15 +120,22 @@ struct ImplementsUnstructure<
     >
 >: std::true_type {};
 
+template<typename T, typename Json>
+inline constexpr bool ImplementsUnstructure =
+    ImplementsUnstructure_<T, Json>::value;
+
 
 template<typename T, typename = std::void_t<>>
-struct ImplementsDefault: std::false_type {};
+struct ImplementsDefault_: std::false_type {};
 
 template<typename T>
-struct ImplementsDefault<
+struct ImplementsDefault_<
     T,
     std::void_t<decltype(T::GetDefault())>
 > : std::true_type {};
+
+template<typename T>
+inline constexpr bool ImplementsDefault = ImplementsDefault_<T>::value;
 
 
 template<std::size_t Index, typename Fields>
@@ -139,7 +158,7 @@ constexpr auto GetFields(
 template <typename T>
 constexpr auto GetFields(const T &object)
 {
-    static_assert(HasFields<T>::value, "Missing required fields tuple");
+    static_assert(HasFields<T>, "Missing required fields tuple");
 
     constexpr auto propertyCount =
         std::tuple_size<decltype(T::fields)>::value;
@@ -154,7 +173,7 @@ constexpr auto GetFields(const T &object)
 template <typename T, typename F>
 constexpr void ForEachField(F &&function)
 {
-    static_assert(HasFields<T>::value, "Missing required fields tuple");
+    static_assert(HasFields<T>, "Missing required fields tuple");
     jive::ForEach(T::fields, std::forward<F>(function));
 }
 
@@ -247,11 +266,11 @@ Json UnstructureFromFields(const T &structured)
 template<typename Json, typename T>
 Json Unstructure(const T &structured)
 {
-    if constexpr (ImplementsUnstructure<T, Json>::value)
+    if constexpr (ImplementsUnstructure<T, Json>)
     {
         return structured.template Unstructure<Json>();
     }
-    else if constexpr (HasFields<T>::value)
+    else if constexpr (HasFields<T>)
     {
         return UnstructureFromFields<Json>(structured);
     }
@@ -331,7 +350,7 @@ const Json * FindMember(const Field &field, const Json &unstructured)
 template<typename T>
 T Default()
 {
-    if constexpr (ImplementsDefault<T>::value)
+    if constexpr (ImplementsDefault<T>)
     {
         return T::GetDefault();
     }
@@ -389,7 +408,7 @@ void InitializeInPlace(T &result)
 template<typename T, typename Json>
 void StructureFromFields(T &result, const Json &unstructured)
 {
-    if constexpr (HasFields<T>::value)
+    if constexpr (HasFields<T>)
     {
         // Iterate over fields of T to construct members
         // Any call to Structure on a member that HasFields will end up back
@@ -456,7 +475,7 @@ void StructureFromFields(T &result, const Json &unstructured)
 template<typename T, typename Json>
 T Structure(const Json &unstructured)
 {
-    if constexpr (ImplementsStructure<T, Json>::value)
+    if constexpr (ImplementsStructure<T, Json>)
     {
         return T::Structure(unstructured);
     }
@@ -466,7 +485,7 @@ T Structure(const Json &unstructured)
 
         StructureFromFields(result, unstructured);
 
-        if constexpr (ImplementsAfterFields<T>::value)
+        if constexpr (ImplementsAfterFields<T>)
         {
             // Allow T to do any additional initialization.
             result.AfterFields();

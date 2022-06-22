@@ -25,7 +25,7 @@ namespace jive
 
 // Define DescribeType for fields classes
 template<typename T>
-struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>::value>>
+struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>>>
 {
     static constexpr std::string_view value = T::fieldsTypeName;
 };
@@ -43,10 +43,10 @@ namespace fields
  **
  **/
 template<typename T, typename Colors, typename VerboseTypes, typename = void>
-struct ImplementsDescribe: std::false_type {};
+struct ImplementsDescribe_: std::false_type {};
 
 template<typename T, typename Colors, typename VerboseTypes>
-struct ImplementsDescribe<
+struct ImplementsDescribe_<
     T,
     Colors,
     VerboseTypes,
@@ -62,6 +62,10 @@ struct ImplementsDescribe<
         >
     >
 >: std::true_type {};
+
+template<typename T, typename Colors, typename VerboseTypes>
+inline constexpr bool ImplementsDescribe =
+    ImplementsDescribe_<T, Colors, VerboseTypes>::value;
 
 
 struct DefaultColors
@@ -89,6 +93,10 @@ class Describe;
 template<typename T, typename Colors = DefaultColors>
 auto DescribeColorized(const T &object, int indent = -1)
 {
+    static_assert(
+        HasFields<T> || ImplementsDescribe<T, NoColor, std::false_type>,
+        "Describe requires a fields tuple.");
+
     return Describe<T, Colors>(object, indent);
 }
 
@@ -96,6 +104,10 @@ auto DescribeColorized(const T &object, int indent = -1)
 template<typename T, typename Colors = DefaultColors>
 auto DescribeColorizedVerbose(const T &object, int indent = -1)
 {
+    static_assert(
+        HasFields<T> || ImplementsDescribe<T, Colors, std::true_type>,
+        "Describe requires a fields tuple.");
+
     return Describe<T, Colors, std::true_type>(object, indent);
 }
 
@@ -103,6 +115,10 @@ auto DescribeColorizedVerbose(const T &object, int indent = -1)
 template<typename T, typename Colors = DefaultColors>
 auto DescribeCompact(const T &object, int indent = -1)
 {
+    static_assert(
+        HasFields<T> || ImplementsDescribe<T, Colors, std::false_type>,
+        "Describe requires a fields tuple.");
+
     return Describe<T, Colors, std::false_type>(object, indent);
 }
 
@@ -110,6 +126,10 @@ auto DescribeCompact(const T &object, int indent = -1)
 template<typename T, typename Colors, typename VerboseTypes>
 std::string ToString(const Describe<T, Colors, VerboseTypes> &describe)
 {
+    static_assert(
+        HasFields<T> || ImplementsDescribe<T, Colors, VerboseTypes>,
+        "Describe requires a fields tuple.");
+
     std::ostringstream outputStream;
     describe(outputStream);
     return outputStream.str();
@@ -313,28 +333,28 @@ public:
             colorize(Colors::name, this->name_, ": ");
         }
 
-        if constexpr (HasFields<T>::value)
+        if constexpr (HasFields<T>)
         {
             colorize(Colors::structure, jive::GetTypeName<T>());
             outputStream << "(";
         }
 
-        if constexpr (ImplementsDescribe<T, Colors, VerboseTypes>::value)
+        if constexpr (ImplementsDescribe<T, Colors, VerboseTypes>)
         {
             this->object_.template Describe<Colors, VerboseTypes>(
                 outputStream,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
             outputStream << ")";
         }
-        else if constexpr (HasFields<T>::value)
+        else if constexpr (HasFields<T>)
         {
 
 #if defined _MSC_VER && _MSC_VER <= 1932
-        // MSVC is confused by correct C++ syntax...
-        this->template Describe::DescribeFields(
+            // MSVC is confused by correct C++ syntax...
+            this->template Describe::DescribeFields(
 #else
-        // Clang and GCC are not
-        this->template DescribeFields(
+            // Clang and GCC are not
+            this->template DescribeFields(
 #endif
                 outputStream,
                 this->object_,
