@@ -517,6 +517,11 @@ T Get(const Json &json, const std::string &key, GetDefault getDefault)
 }
 
 
+/***** Identity *****/
+template<typename T>
+using Identity = T;
+
+
 #define DECLARE_ADAPTERS(FieldsClass, Adapted)                       \
     FieldsClass() = default;                                         \
                                                                      \
