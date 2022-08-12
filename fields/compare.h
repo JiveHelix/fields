@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <tuple>
 #include "fields/core.h"
 #include "jive/comparison_operators.h"
 #include "jive/equal.h"
@@ -225,4 +226,79 @@ namespace detail
 } // end namespace detail
 
 
+template <typename T, typename Fields, std::size_t... I>
+constexpr auto ComparisonTuple(
+    const T &object,
+    Fields &&fields,
+    std::index_sequence<I...>)
+{
+    return std::make_tuple(
+        detail::MakeCompare<detail::Precision<T>::value>(
+            object.*(std::get<I>(fields).member))...);
+}
+
+template <typename T, typename Fields>
+constexpr auto ComparisonTuple(const T &object, Fields &&fields)
+{
+    constexpr auto propertyCount =
+        std::tuple_size<std::remove_reference_t<decltype(fields)>>::value;
+
+    return ComparisonTuple(
+        object,
+        std::forward<Fields>(fields),
+        std::make_index_sequence<propertyCount>{});
+}
+
+
 } // end namespace fields
+
+
+#define DECLARE_OPERATOR_EQUALS(Type, fieldsTuple)              \
+    inline bool operator==(const Type &left, const Type &right) \
+    {                                                           \
+        return fields::ComparisonTuple(left, fieldsTuple)       \
+            == fields::ComparisonTuple(right, fieldsTuple);     \
+    }
+
+#define DECLARE_OPERATOR_NOT_EQUALS(Type, fieldsTuple)          \
+    inline bool operator!=(const Type &left, const Type &right) \
+    {                                                           \
+        return fields::ComparisonTuple(left, fieldsTuple)       \
+            != fields::ComparisonTuple(right, fieldsTuple);     \
+    }
+
+#define DECLARE_OPERATOR_LESS_THAN(Type, fieldsTuple)          \
+    inline bool operator<(const Type &left, const Type &right) \
+    {                                                          \
+        return fields::ComparisonTuple(left, fieldsTuple)      \
+            < fields::ComparisonTuple(right, fieldsTuple);     \
+    }
+
+#define DECLARE_OPERATOR_GREATER_THAN(Type, fieldsTuple)       \
+    inline bool operator>(const Type &left, const Type &right) \
+    {                                                          \
+        return fields::ComparisonTuple(left, fieldsTuple)      \
+            > fields::ComparisonTuple(right, fieldsTuple);     \
+    }
+
+#define DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, fieldsTuple)    \
+    inline bool operator<=(const Type &left, const Type &right) \
+    {                                                           \
+        return fields::ComparisonTuple(left, fieldsTuple)       \
+            <= fields::ComparisonTuple(right, fieldsTuple);     \
+    }
+
+#define DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, fieldsTuple) \
+    inline bool operator>=(const Type &left, const Type &right) \
+    {                                                           \
+        return fields::ComparisonTuple(left, fieldsTuple)       \
+            >= fields::ComparisonTuple(right, fieldsTuple);     \
+    }
+
+#define DECLARE_COMPARISON_OPERATORS(Type, fieldsTuple)  \
+    DECLARE_OPERATOR_EQUALS(Type, fieldsTuple)           \
+    DECLARE_OPERATOR_NOT_EQUALS(Type, fieldsTuple)       \
+    DECLARE_OPERATOR_LESS_THAN(Type, fieldsTuple)        \
+    DECLARE_OPERATOR_GREATER_THAN(Type, fieldsTuple)     \
+    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, fieldsTuple) \
+    DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, fieldsTuple)
