@@ -19,13 +19,13 @@
 #define USE_PRECISE_DIGITS
 #include "fields/fields.h"
 
-#ifndef _WIN32
+#ifdef __clang__ 
 // Silence a single warning in nlohmann/json.hpp
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
 #endif
 #include <nlohmann/json.hpp>
-#ifndef _WIN32
+#ifdef __clang__
 #pragma GCC diagnostic pop
 #endif
 
@@ -179,7 +179,7 @@ int main()
     original.fooByName["2nd"] = {117, -67, 13e-9};
     original.fooByName["3rd"] = {117 * 2, -67 * 2, 13e-9 * 2};
 
-    auto unstructured{fields::Unstructure<json>(original)};
+    auto unstructured = fields::Unstructure<json>(original);
 
     // Restructure using one of the alternate names for 'first': 'primis'
     auto first = unstructured["any name you want"]["first"];
