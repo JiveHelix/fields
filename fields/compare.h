@@ -1,8 +1,8 @@
 /**
   * @file compare.h
-  * 
+  *
   * @brief Implements details for comparison operators.
-  * 
+  *
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 01 May 2020
   * @copyright Jive Helix
@@ -106,7 +106,7 @@ namespace detail
             return !(*this < other);
         }
 
-    private:    
+    private:
         const T &value_;
     };
 
@@ -122,7 +122,7 @@ namespace detail
     {
     public:
         Compare(const T &value): value_(value) {}
-        
+
         bool operator<(const Compare &other) const
         {
             return this->value_ < other.value_;
@@ -153,7 +153,7 @@ namespace detail
             return this->value_ >= other.value_;
         }
 
-    private:    
+    private:
         const T &value_;
     };
 

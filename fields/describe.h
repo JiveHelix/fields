@@ -184,6 +184,15 @@ public:
 
     std::string GetIndent() const
     {
+        if constexpr (std::is_arithmetic_v<T>)
+        {
+            if (this->name_.empty())
+            {
+                // Print un-named numeric values on the same line.
+                return {};
+            }
+        }
+
         return MakeIndent(this->indent_);
     }
 
