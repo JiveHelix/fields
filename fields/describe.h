@@ -392,6 +392,10 @@ public:
                 // ASCII character.
                 outputStream << int16_t{this->object_};
             }
+            else if constexpr (jive::HasOutputStreamOperator<T>::value)
+            {
+                outputStream << this->object_;
+            }
             else if constexpr (jive::IsKeyValueContainer<T>::value)
             {
                 this->DescribeMap(outputStream, this->object_);
