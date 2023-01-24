@@ -1,8 +1,8 @@
 /**
   * @file precision_demo.cpp
-  * 
+  *
   * @brief Floating-point comparison demonstration.
-  * 
+  *
   * @author Jive Helix (jivehelix@gmail.com)
   * @date 02 Sep 2021
   * @copyright Jive Helix
@@ -16,7 +16,6 @@
 
 #define USE_PRECISE_DIGITS
 #include "fields/fields.h"
-#include "fields/comparisons.h"
 
 #include "jive/begin.h"
 
@@ -38,6 +37,9 @@ struct Position
 };
 
 
+DECLARE_COMPARISON_OPERATORS(Position)
+
+
 struct AnArrayOfValues
 {
     double values[2][3];
@@ -48,8 +50,10 @@ struct AnArrayOfValues
     static constexpr size_t precision = 3;
 };
 
-DECLARE_OUTPUT_STREAM_OPERATOR(Position);
-DECLARE_OUTPUT_STREAM_OPERATOR(AnArrayOfValues);
+DECLARE_COMPARISON_OPERATORS(AnArrayOfValues)
+
+DECLARE_OUTPUT_STREAM_OPERATOR(Position)
+DECLARE_OUTPUT_STREAM_OPERATOR(AnArrayOfValues)
 
 
 int main()
@@ -64,17 +68,17 @@ int main()
 
     AnArrayOfValues t{};
     AnArrayOfValues u{};
-    
+
     std::iota(
         jive::Begin(t.values),
         jive::End(t.values),
         1.0);
-    
+
     u = t;
 
     // Should still compare equal
     u.values[1][1] += 0.0005;
-    
+
     std::cout << "Expect equal:" << std::endl;
     std::cout << t << " == " << u << ": " << (t == u) << std::endl;
 

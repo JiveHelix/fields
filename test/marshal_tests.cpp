@@ -6,6 +6,8 @@
 
 #include <catch2/catch.hpp>
 #include "fields/marshal.h"
+#include "fields/core.h"
+#include "fields/compare.h"
 #include "jive/testing/gettys_words.h"
 #include "jive/testing/generator_limits.h"
 
@@ -174,4 +176,47 @@ TEMPLATE_TEST_CASE(
     marshal["levelOne"]["levelTwo"]["myValue"] = value;
     TestType recovered = marshal["levelOne"]["levelTwo"]["myValue"];
     REQUIRE(recovered == Approx(value));
+}
+
+
+struct AnEmptyStruct
+{
+
+};
+
+
+inline
+std::ostream & operator<<(std::ostream &output, const AnEmptyStruct &)
+{
+    return output << "AnEmptyStruct";
+}
+
+
+struct HasEmpty
+{
+    int theAnswer;
+    std::string theMessage;
+    AnEmptyStruct empty;
+
+    static constexpr auto fields = std::make_tuple(
+        fields::Field(&HasEmpty::theAnswer, "theAnswer"),
+        fields::Field(&HasEmpty::theMessage, "theMessage"),
+        fields::Field(&HasEmpty::empty, "empty"));
+};
+
+
+DECLARE_COMPARISON_OPERATORS(HasEmpty)
+
+
+TEST_CASE("Round-trip struct with empty types through Marshal", "[marshal]")
+{
+    auto wordCount = GENERATE(take(10, random(1u, 10u)));
+    HasEmpty hasEmpty{};
+    hasEmpty.theMessage = RandomGettysWords().MakeWords(wordCount);
+    hasEmpty.theAnswer = 42;
+
+    auto marshaled = fields::Unstructure<fields::Marshal>(hasEmpty);
+    auto recovered = fields::Structure<HasEmpty>(marshaled);
+
+    REQUIRE(recovered == hasEmpty);
 }

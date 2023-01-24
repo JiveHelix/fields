@@ -252,7 +252,7 @@ Json UnstructureFromFields(const T &structured)
                 auto asVector = UnstructureArray(structured.*(field.member));
                 result[field.name] = Unstructure<Json>(asVector);
             }
-            else
+            else if constexpr (!std::is_empty_v<Type>)
             {
                 result[field.name] =
                     Unstructure<Json>(structured.*(field.member));
@@ -302,11 +302,15 @@ Json Unstructure(const T &structured)
     {
         return structured.to_ullong();
     }
-    else
+    else if constexpr (!std::is_empty_v<T>)
     {
         // All other members must be implicitly convertible to
         // the json value.
         return structured;
+    }
+    else
+    {
+        return {};
     }
 }
 
@@ -379,7 +383,7 @@ void StructureInPlace(T &result, const Json &unstructured)
                 unstructured.at(i));
         }
     }
-    else
+    else if constexpr (!std::is_empty_v<T>)
     {
         result = Structure<T>(unstructured);
     }
@@ -462,7 +466,7 @@ void StructureFromFields(T &result, const Json &unstructured)
         {
             result = static_cast<unsigned long long>(unstructured);
         }
-        else
+        else if constexpr (!std::is_empty_v<T>)
         {
             // Other members without fields must be convertible from the json
             // value.

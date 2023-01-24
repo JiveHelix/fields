@@ -30,6 +30,13 @@ struct DefaultBooleans
 };
 
 
+struct DefaultParameters
+{
+    static constexpr unsigned indentWidth = 4;
+    static constexpr auto separator = ":";
+};
+
+
 template<unsigned width>
 std::string MakeIndentedLine(int indent)
 {
@@ -172,7 +179,7 @@ public:
     const_iterator begin() const { return this->membersByName_.begin(); }
     const_iterator end() const { return this->membersByName_.end(); }
 
-    template<typename Parameters>
+    template<typename Parameters = DefaultParameters>
     std::ostream & Serialize(std::ostream &outputStream, int indent = -1)
     {
         outputStream << this->value_;
@@ -192,7 +199,7 @@ public:
 
                 member->template Serialize<Parameters>(
                     outputStream,
-                    indent + 1);
+                    (indent > -1) ? indent + 1: indent);
             }
         }
 

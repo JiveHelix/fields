@@ -48,7 +48,7 @@ namespace detail
     template<ssize_t precision, typename T, typename Enable = void>
     class Compare {};
 
-    template <ssize_t precision, typename T>
+    template<ssize_t precision, typename T>
     class Compare<
         precision,
         T,
@@ -197,7 +197,7 @@ namespace detail
         return Compare<precision, T>(value);
     }
 
-    template <typename T, std::size_t... I>
+    template<typename T, std::size_t... I>
     constexpr auto ComparisonTuple(
             const T &object,
             std::index_sequence<I...>)
@@ -207,7 +207,7 @@ namespace detail
                 object.*(std::get<I>(T::fields).member))...);
     }
 
-    template <typename T>
+    template<typename T>
     constexpr auto ComparisonTuple(const T &object)
     {
         static_assert(
@@ -222,11 +222,40 @@ namespace detail
             std::make_index_sequence<propertyCount>{});
     }
 
-
 } // end namespace detail
 
 
-template <typename T, typename Fields, std::size_t... I>
+template<typename T, typename Fields, size_t Count, size_t... I>
+constexpr auto SelectFields(const T &object, const Fields &fields)
+{
+    if constexpr (Count == 0)
+    {
+        return std::index_sequence<I...>();
+    }
+    else
+    {
+        using MemberType = typename std::remove_reference_t
+            <
+                decltype(object.*(std::get<Count - 1>(fields).member))
+            >;
+
+        if constexpr (std::is_empty_v<MemberType>)
+        {
+            // Empty types do not participate in comparisons.
+            // Skip this field.
+            return SelectFields<T, Fields, Count - 1, I...>(object, fields);
+        }
+        else
+        {
+            return SelectFields<T, Fields, Count - 1, Count - 1, I...>(
+                object,
+                fields);
+        }
+    }
+}
+
+
+template<typename T, typename Fields, std::size_t... I>
 constexpr auto ComparisonTuple(
     const T &object,
     Fields &&fields,
@@ -237,7 +266,7 @@ constexpr auto ComparisonTuple(
             object.*(std::get<I>(fields).member))...);
 }
 
-template <typename T, typename Fields>
+template<typename T, typename Fields>
 constexpr auto ComparisonTuple(const T &object, Fields &&fields)
 {
     constexpr auto propertyCount =
@@ -246,7 +275,7 @@ constexpr auto ComparisonTuple(const T &object, Fields &&fields)
     return ComparisonTuple(
         object,
         std::forward<Fields>(fields),
-        std::make_index_sequence<propertyCount>{});
+        SelectFields<T, Fields, propertyCount>(object, fields));
 }
 
 
@@ -295,10 +324,10 @@ constexpr auto ComparisonTuple(const T &object, Fields &&fields)
             >= fields::ComparisonTuple(right, fieldsTuple);     \
     }
 
-#define DECLARE_COMPARISON_OPERATORS(Type, fieldsTuple)  \
-    DECLARE_OPERATOR_EQUALS(Type, fieldsTuple)           \
-    DECLARE_OPERATOR_NOT_EQUALS(Type, fieldsTuple)       \
-    DECLARE_OPERATOR_LESS_THAN(Type, fieldsTuple)        \
-    DECLARE_OPERATOR_GREATER_THAN(Type, fieldsTuple)     \
-    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, fieldsTuple) \
-    DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, fieldsTuple)
+#define DECLARE_COMPARISON_OPERATORS(Type)                \
+    DECLARE_OPERATOR_EQUALS(Type, Type::fields)           \
+    DECLARE_OPERATOR_NOT_EQUALS(Type, Type::fields)       \
+    DECLARE_OPERATOR_LESS_THAN(Type, Type::fields)        \
+    DECLARE_OPERATOR_GREATER_THAN(Type, Type::fields)     \
+    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, Type::fields) \
+    DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, Type::fields)

@@ -37,7 +37,7 @@ struct TestData
 };
 
 
-DECLARE_COMPARISON_OPERATORS(TestData, TestData::fields)
+DECLARE_COMPARISON_OPERATORS(TestData)
 
 
 TEST_CASE("Fields byte swap", "[swap]")
@@ -87,7 +87,7 @@ struct NetworkData
 };
 
 
-DECLARE_COMPARISON_OPERATORS(NetworkData, NetworkData::fields)
+DECLARE_COMPARISON_OPERATORS(NetworkData)
 
 
 TEST_CASE("Only networkMembers are swapped", "[swap]")

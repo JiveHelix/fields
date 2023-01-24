@@ -19,7 +19,7 @@
 #define USE_PRECISE_DIGITS
 #include "fields/fields.h"
 
-#ifdef __clang__ 
+#ifdef __clang__
 // Silence a single warning in nlohmann/json.hpp
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
@@ -31,7 +31,6 @@
 
 using json = nlohmann::json;
 
-#include "fields/comparisons.h"
 
 struct Foo
 {
@@ -134,6 +133,11 @@ struct Wobble
 
     constexpr static auto fieldsTypeName = "Wobble";
 };
+
+
+DECLARE_COMPARISON_OPERATORS(Foo)
+DECLARE_COMPARISON_OPERATORS(Bar)
+DECLARE_COMPARISON_OPERATORS(Wobble)
 
 
 
