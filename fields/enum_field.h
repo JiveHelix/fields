@@ -12,21 +12,21 @@ public:
     static constexpr auto fieldsTypeName = Traits::fieldsTypeName;
 
     EnumField(): value_(Traits::defaultValue) {}
-    
+
     explicit EnumField(const Value &value): value_(value) {}
 
     EnumField(const std::string &asString)
         :
         value_(Traits::valueByString.at(asString))
     {
-        
+
     }
 
     EnumField(const Traits &derived)
         :
         value_(derived.value_)
     {
-        
+
     }
 
     EnumField & operator=(Value value)
@@ -65,7 +65,7 @@ public:
     }
 
 private:
-    Value value_; 
+    Value value_;
 };
 
 

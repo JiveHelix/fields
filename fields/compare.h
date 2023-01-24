@@ -157,7 +157,7 @@ namespace detail
         const T &value_;
     };
 
-    // Optionally, a class can name itself
+
     template<typename, typename = void>
     struct HasPrecision: std::false_type {};
 

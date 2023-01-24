@@ -229,7 +229,7 @@ typename Dimensional<T>::type UnstructureArray(const T &structured)
 
         for (size_t i = 0; i < size; ++i)
         {
-            result.push_back(UnstructureArray(structured[i])); 
+            result.push_back(UnstructureArray(structured[i]));
         }
 
         return result;
