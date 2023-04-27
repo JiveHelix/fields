@@ -454,3 +454,11 @@ std::ostream & operator<<(std::ostream &outputStream, const type &value)    \
 {                                                                           \
     return outputStream << fields::DescribeCompact(value);                  \
 }
+
+
+#define TEMPLATE_OUTPUT_STREAM(Type)                                        \
+template<typename T>                                                        \
+std::ostream & operator<<(std::ostream &outputStream, const Type<T> &value) \
+{                                                                           \
+    return outputStream << fields::DescribeCompact(value);                  \
+}
