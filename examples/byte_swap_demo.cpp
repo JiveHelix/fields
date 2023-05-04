@@ -36,7 +36,7 @@ struct Values
     char identity[4];
     uint32_t wibble;
     uint16_t anArray[2][3];
-    Position positions[2];
+    std::array<Position, 2> positions;
 
     constexpr static auto fields = std::make_tuple(
         fields::Field(&Values::identity, "identity"),
@@ -59,7 +59,7 @@ int main()
         {'C', 'D', 'M', 'A'},
         0xDEADBEEF,
         {{0xCAFE, 0xBABE, 0xFEED}, {0xDEAF, 0xC0DE, 0xD00B}},
-        {{0xCAFE, 0xBABE, 0xFEED}, {0xDEAF, 0xC0DE, 0xD00B}}};
+        {{{0xCAFE, 0xBABE, 0xFEED}, {0xDEAF, 0xC0DE, 0xD00B}}}};
 
     std::cout << std::hex;
 

@@ -84,6 +84,11 @@ template
 void HostToNetwork(T &);
 
 
+template<typename T, size_t N>
+void HostToNetwork(std::array<T, N> &);
+
+
+
 // Implementations
 template
 <
@@ -134,6 +139,20 @@ void HostToNetwork(T &object)
 }
 
 
+template<typename T, size_t N>
+void HostToNetwork(std::array<T, N> &data)
+{
+    auto begin = std::begin(data);
+    auto end = std::end(data);
+
+    while (begin != end)
+    {
+        HostToNetwork(*begin);
+        ++begin;
+    }
+}
+
+
 /*** NetworkToHost ***/
 
 template
@@ -172,6 +191,10 @@ template
 void NetworkToHost(T &);
 
 
+template<typename T, size_t N>
+void NetworkToHost(std::array<T, N> &);
+
+
 template
 <
     typename T,
@@ -181,6 +204,20 @@ void NetworkToHost(T &value)
 {
     auto begin = jive::Begin(value);
     auto end = jive::End(value);
+
+    while (begin != end)
+    {
+        NetworkToHost(*begin);
+        ++begin;
+    }
+}
+
+
+template<typename T, size_t N>
+void NetworkToHost(std::array<T, N> &data)
+{
+    auto begin = std::begin(data);
+    auto end = std::end(data);
 
     while (begin != end)
     {
