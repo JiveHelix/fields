@@ -3,7 +3,7 @@ from conans import ConanFile, CMake
 
 class FieldsConan(ConanFile):
     name = "fields"
-    version = "1.2.1"
+    version = "1.2.2"
 
     scm = {
         "type": "git",
@@ -42,4 +42,4 @@ class FieldsConan(ConanFile):
         self.build_requires("nlohmann_json/[~3.11]")
 
     def requirements(self):
-        self.requires("jive/[~1.0]")
+        self.requires("jive/[~1.1]")

@@ -20,7 +20,7 @@
 
 template <typename T>
 std::enable_if_t<
-    (fields::HasFields<T> && !jive::HasEqualTo<T>::value),
+    (fields::HasFields<T> && !jive::HasEqualTo<T>),
     bool>
 operator==(const T &left, const T &right)
 {

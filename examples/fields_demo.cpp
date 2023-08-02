@@ -57,6 +57,9 @@ struct Foo
 };
 
 
+DECLARE_OUTPUT_STREAM_OPERATOR(Foo)
+
+
 struct Bar
 {
     Foo first;
@@ -108,6 +111,9 @@ struct Bar
 };
 
 
+DECLARE_OUTPUT_STREAM_OPERATOR(Bar)
+
+
 struct Wobble
 {
     uint8_t alpha[2][4];
@@ -133,6 +139,9 @@ struct Wobble
 
     constexpr static auto fieldsTypeName = "Wobble";
 };
+
+
+DECLARE_OUTPUT_STREAM_OPERATOR(Wobble)
 
 
 DECLARE_COMPARISON_OPERATORS(Foo)

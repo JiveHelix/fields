@@ -13,9 +13,10 @@
 
 #include <tuple>
 #include "fields/core.h"
-#include "jive/comparison_operators.h"
-#include "jive/equal.h"
-#include "jive/begin.h"
+#include <jive/comparison_operators.h>
+#include <jive/equal.h>
+#include <jive/begin.h>
+
 
 namespace fields
 {
@@ -49,10 +50,12 @@ namespace detail
     class Compare {};
 
     template<ssize_t precision, typename T>
-    class Compare<
+    class Compare
+    <
         precision,
         T,
-        typename std::enable_if_t<
+        typename std::enable_if_t
+        <
             std::is_array_v<T>
         >
     >
@@ -112,10 +115,12 @@ namespace detail
 
 
     template<ssize_t precision, typename T>
-    class Compare<
+    class Compare
+    <
         precision,
         T,
-        typename std::enable_if_t<
+        typename std::enable_if_t
+        <
             !std::is_array_v<T>
         >
     >
@@ -163,10 +168,13 @@ namespace detail
 
 
     template<typename T>
-    struct HasPrecision<
+    struct HasPrecision
+    <
         T,
-        std::void_t<
-            std::enable_if_t<
+        std::void_t
+        <
+            std::enable_if_t
+            <
                 std::is_convertible_v<decltype(T::precision), ssize_t>
             >
         >
@@ -180,9 +188,11 @@ namespace detail
 
 
     template<typename T>
-    struct Precision<
+    struct Precision
+    <
         T,
-        std::void_t<
+        std::void_t
+        <
             std::enable_if_t<HasPrecision<T>::value>
         >
     >
@@ -324,10 +334,77 @@ constexpr auto ComparisonTuple(const T &object, Fields &&fields)
             >= fields::ComparisonTuple(right, fieldsTuple);     \
     }
 
-#define DECLARE_COMPARISON_OPERATORS(Type)                \
-    DECLARE_OPERATOR_EQUALS(Type, Type::fields)           \
-    DECLARE_OPERATOR_NOT_EQUALS(Type, Type::fields)       \
-    DECLARE_OPERATOR_LESS_THAN(Type, Type::fields)        \
-    DECLARE_OPERATOR_GREATER_THAN(Type, Type::fields)     \
-    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, Type::fields) \
+
+#define DECLARE_EQUALITY_OPERATORS(Type)                        \
+    DECLARE_OPERATOR_EQUALS(Type, Type::fields)                 \
+    DECLARE_OPERATOR_NOT_EQUALS(Type, Type::fields)
+
+
+#define DECLARE_COMPARISON_OPERATORS(Type)                      \
+    DECLARE_EQUALITY_OPERATORS(Type)                            \
+    DECLARE_OPERATOR_LESS_THAN(Type, Type::fields)              \
+    DECLARE_OPERATOR_GREATER_THAN(Type, Type::fields)           \
+    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, Type::fields)       \
     DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, Type::fields)
+
+
+#define TEMPLATE_OPERATOR_EQUALS(Type)                          \
+    template <typename T>                                       \
+    bool operator==(const Type<T> &left, const Type<T> &right)  \
+    {                                                           \
+        return fields::ComparisonTuple(left, Type<T>::fields)   \
+            == fields::ComparisonTuple(right, Type<T>::fields); \
+    }
+
+#define TEMPLATE_OPERATOR_NOT_EQUALS(Type)                      \
+    template <typename T>                                       \
+    bool operator!=(const Type<T> &left, const Type<T> &right)  \
+    {                                                           \
+        return fields::ComparisonTuple(left, Type<T>::fields)   \
+            != fields::ComparisonTuple(right, Type<T>::fields); \
+    }
+
+#define TEMPLATE_OPERATOR_LESS_THAN(Type)                      \
+    template <typename T>                                      \
+    bool operator<(const Type<T> &left, const Type<T> &right)  \
+    {                                                          \
+        return fields::ComparisonTuple(left, Type<T>::fields)  \
+            < fields::ComparisonTuple(right, Type<T>::fields); \
+    }
+
+#define TEMPLATE_OPERATOR_GREATER_THAN(Type)                   \
+    template <typename T>                                      \
+    bool operator>(const Type<T> &left, const Type<T> &right)  \
+    {                                                          \
+        return fields::ComparisonTuple(left, Type<T>::fields)  \
+            > fields::ComparisonTuple(right, Type<T>::fields); \
+    }
+
+#define TEMPLATE_OPERATOR_LESS_THAN_EQUALS(Type)                \
+    template <typename T>                                       \
+    bool operator<=(const Type<T> &left, const Type<T> &right)  \
+    {                                                           \
+        return fields::ComparisonTuple(left, Type<T>::fields)   \
+            <= fields::ComparisonTuple(right, Type<T>::fields); \
+    }
+
+#define TEMPLATE_OPERATOR_GREATER_THAN_EQUALS(Type)             \
+    template <typename T>                                       \
+    bool operator>=(const Type<T> &left, const Type<T> &right)  \
+    {                                                           \
+        return fields::ComparisonTuple(left, Type<T>::fields)   \
+            >= fields::ComparisonTuple(right, Type<T>::fields); \
+    }
+
+
+#define TEMPLATE_EQUALITY_OPERATORS(Type)                       \
+    TEMPLATE_OPERATOR_EQUALS(Type)                              \
+    TEMPLATE_OPERATOR_NOT_EQUALS(Type)
+
+
+#define TEMPLATE_COMPARISON_OPERATORS(Type)     \
+    TEMPLATE_EQUALITY_OPERATORS(Type)           \
+    TEMPLATE_OPERATOR_LESS_THAN(Type)           \
+    TEMPLATE_OPERATOR_GREATER_THAN(Type)        \
+    TEMPLATE_OPERATOR_LESS_THAN_EQUALS(Type)    \
+    TEMPLATE_OPERATOR_GREATER_THAN_EQUALS(Type)
