@@ -19,7 +19,6 @@
 #include "jive/colorize.h"
 #include "jive/type_traits.h"
 
-#define BORKED_MSC_VER 1933
 
 namespace jive
 {
@@ -319,7 +318,7 @@ public:
     {
         constexpr auto itemCount = std::tuple_size<Fields>::value;
 
-#if defined _MSC_VER && _MSC_VER <= BORKED_MSC_VER
+#if defined _MSC_VER
         // MSVC is confused by correct C++ syntax...
         return this->template Describe::DescribeFields(
 #else
@@ -359,7 +358,7 @@ public:
         else if constexpr (HasFields<T>)
         {
 
-#if defined _MSC_VER && _MSC_VER <= BORKED_MSC_VER
+#if defined _MSC_VER
             // MSVC is confused by correct C++ syntax...
             this->template Describe::DescribeFields(
 #else
