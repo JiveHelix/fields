@@ -32,6 +32,7 @@ struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>>>
 
 } // end namespace jive
 
+
 namespace fields
 {
 
@@ -145,6 +146,29 @@ std::ostream & operator<<(
 }
 
 
+#ifdef __GNUG__
+// Avoid bogus -Wrestrict
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105651
+#ifndef DO_PRAGMA
+#define DO_PRAGMA_(arg) _Pragma (#arg)
+#define DO_PRAGMA(arg) DO_PRAGMA_(arg)
+#endif
+
+#define GNU_NO_RESTRICT_PUSH \
+    DO_PRAGMA(GCC diagnostic push); \
+    DO_PRAGMA(GCC diagnostic ignored "-Wrestrict");
+
+#define GNU_NO_RESTRICT_POP \
+    DO_PRAGMA(GCC diagnostic pop);
+
+#else
+
+#define GNU_NO_RESTRICT_PUSH
+#define GNU_NO_RESTRICT_POP
+
+#endif // defined __GNUG__
+
+
 inline std::string MakeIndent(int indent)
 {
     if (indent <= 0)
@@ -152,7 +176,12 @@ inline std::string MakeIndent(int indent)
         return {};
     }
 
+GNU_NO_RESTRICT_PUSH
+
     return "\n" + std::string(static_cast<unsigned>(indent) * 4, ' ');
+
+GNU_NO_RESTRICT_POP
+
 }
 
 
