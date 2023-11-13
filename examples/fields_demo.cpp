@@ -16,8 +16,10 @@
 #include <iostream>
 #include <iomanip>
 
+struct Groot;
+
 #define USE_PRECISE_DIGITS
-#include "fields/fields.h"
+#include "fields/core.h"
 
 #ifdef __clang__
 // Silence a single warning in nlohmann/json.hpp
@@ -32,24 +34,27 @@
 using json = nlohmann::json;
 
 
-struct Foo
+#include <fields/describe.h>
+
+
+struct Groot
 {
     int x;
     long y;
     double z;
 
     constexpr static auto fields = std::make_tuple(
-        fields::Field(&Foo::x, "x"),
-        fields::Field(&Foo::y, "y"),
-        fields::Field(&Foo::z, "z"));
+        fields::Field(&Groot::x, "x"),
+        fields::Field(&Groot::y, "y"),
+        fields::Field(&Groot::z, "z"));
 
-    constexpr static auto fieldsTypeName = "Foo";
+    constexpr static auto fieldsTypeName = "Groot";
 
 #if 0
     template<typename Colors, typename VerboseTypes>
     std::ostream & Describe(std::ostream &outputStream, int) const
     {
-        return outputStream << "I am Foo";
+        return outputStream << "I am Groot";
     }
 #endif
 
@@ -57,13 +62,22 @@ struct Foo
 };
 
 
-DECLARE_OUTPUT_STREAM_OPERATOR(Foo)
+
+#if 1
+std::ostream & DoDescribe(std::ostream &outputStream, const Groot &, int)
+{
+    return outputStream << "I am Groot";
+}
+#endif
+
+
+DECLARE_OUTPUT_STREAM_OPERATOR(Groot)
 
 
 struct Bar
 {
-    Foo first;
-    Foo second;
+    Groot first;
+    Groot second;
     double velocity;
 
     template<typename Json>
@@ -89,14 +103,14 @@ struct Bar
 
         if (first)
         {
-            result.first = fields::Structure<Foo>(*first);
+            result.first = fields::Structure<Groot>(*first);
         }
         else
         {
-            result.first = Foo{};
+            result.first = Groot{};
         }
 
-        result.second = fields::Structure<Foo>(jsonValue.at("second"));
+        result.second = fields::Structure<Groot>(jsonValue.at("second"));
         double squareRoot = jsonValue.at("velocity").template get<double>();
         result.velocity = squareRoot * squareRoot;
         return result;
@@ -118,10 +132,10 @@ struct Wobble
 {
     uint8_t alpha[2][4];
     Bar frob;
-    Foo flub[2][2];
+    Groot flub[2][2];
     std::string message;
-    std::vector<Foo> numbers;
-    std::map<std::string, Foo> fooByName;
+    std::vector<Groot> numbers;
+    std::map<std::string, Groot> fooByName;
 
     void AfterFields()
     {
@@ -143,8 +157,9 @@ struct Wobble
 
 DECLARE_OUTPUT_STREAM_OPERATOR(Wobble)
 
+#include <fields/compare.h>
 
-DECLARE_COMPARISON_OPERATORS(Foo)
+DECLARE_COMPARISON_OPERATORS(Groot)
 DECLARE_COMPARISON_OPERATORS(Bar)
 DECLARE_COMPARISON_OPERATORS(Wobble)
 

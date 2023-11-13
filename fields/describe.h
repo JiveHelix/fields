@@ -69,12 +69,61 @@ inline constexpr bool ImplementsDescribe =
     ImplementsDescribe_<T, Colors, VerboseTypes>::value;
 
 
+template<typename T, typename = void>
+struct HasDoDescribe_: std::false_type {};
+
+template<typename T>
+struct HasDoDescribe_
+<
+    T,
+    std::void_t<
+        std::enable_if_t<
+            std::is_same_v<
+                std::ostream &,
+                decltype(
+                    DoDescribe(
+                        std::declval<std::ostream &>(),
+                        std::declval<T>(),
+                        int()))
+            >
+        >
+    >
+>: std::true_type {};
+
+template<typename T>
+inline constexpr bool HasDoDescribe = HasDoDescribe_<T>::value;
+
+
+template<typename T, typename Colors, typename VerboseTypes, typename = void>
+struct CanDescribe_: std::false_type {};
+
+
+template<typename T, typename Colors, typename VerboseTypes>
+struct CanDescribe_
+<
+    T,
+    Colors,
+    VerboseTypes,
+    std::enable_if_t
+    <
+        HasFields<T>
+        || ImplementsDescribe<T, Colors, VerboseTypes>
+        || HasDoDescribe<T>
+    >
+>: std::true_type {};
+
+template<typename T, typename Colors, typename VerboseTypes>
+inline constexpr bool CanDescribe =
+    CanDescribe_<T, Colors, VerboseTypes>::value;
+
+
 struct DefaultColors
 {
     static constexpr auto name = jive::color::green;
     static constexpr auto structure = jive::color::cyan;
     static constexpr auto type = jive::color::yellow;
 };
+
 
 struct NoColor
 {
@@ -95,8 +144,8 @@ template<typename T, typename Colors = DefaultColors>
 auto DescribeColorized(const T &object, int indent = -1)
 {
     static_assert(
-        HasFields<T> || ImplementsDescribe<T, NoColor, std::false_type>,
-        "Describe requires a fields tuple.");
+        CanDescribe<T, Colors, std::false_type>,
+        "Type cannot be described");
 
     return Describe<T, Colors>(object, indent);
 }
@@ -106,8 +155,8 @@ template<typename T, typename Colors = DefaultColors>
 auto DescribeColorizedVerbose(const T &object, int indent = -1)
 {
     static_assert(
-        HasFields<T> || ImplementsDescribe<T, Colors, std::true_type>,
-        "Describe requires a fields tuple.");
+        CanDescribe<T, Colors, std::true_type>,
+        "Type cannot be described");
 
     return Describe<T, Colors, std::true_type>(object, indent);
 }
@@ -117,8 +166,8 @@ template<typename T, typename Colors = DefaultColors>
 auto DescribeCompact(const T &object, int indent = -1)
 {
     static_assert(
-        HasFields<T> || ImplementsDescribe<T, Colors, std::false_type>,
-        "Describe requires a fields tuple.");
+        CanDescribe<T, Colors, std::false_type>,
+        "Type cannot be described");
 
     return Describe<T, Colors, std::false_type>(object, indent);
 }
@@ -128,8 +177,8 @@ template<typename T, typename Colors, typename VerboseTypes>
 std::string ToString(const Describe<T, Colors, VerboseTypes> &describe)
 {
     static_assert(
-        HasFields<T> || ImplementsDescribe<T, Colors, VerboseTypes>,
-        "Describe requires a fields tuple.");
+        CanDescribe<T, Colors, VerboseTypes>,
+        "Type cannot be described");
 
     std::ostringstream outputStream;
     describe(outputStream);
@@ -146,7 +195,7 @@ std::ostream & operator<<(
 }
 
 
-#ifdef __GNUG__
+#if defined(__GNUG__) && !defined(__clang__) && !defined(_WIN32)
 // Avoid bogus -Wrestrict
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105651
 #ifndef DO_PRAGMA
@@ -371,21 +420,23 @@ public:
             colorize(Colors::name, this->name_, ": ");
         }
 
-        if constexpr (HasFields<T>)
-        {
-            colorize(Colors::structure, jive::GetTypeName<T>());
-            outputStream << "(";
-        }
-
         if constexpr (ImplementsDescribe<T, Colors, VerboseTypes>)
         {
             this->object_.template Describe<Colors, VerboseTypes>(
                 outputStream,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
-            outputStream << ")";
+        }
+        else if constexpr (HasDoDescribe<T>)
+        {
+            DoDescribe(
+                outputStream,
+                this->object_,
+                (this->indent_ < 0) ? -1 : this->indent_ + 1);
         }
         else if constexpr (HasFields<T>)
         {
+            colorize(Colors::structure, jive::GetTypeName<T>());
+            outputStream << "(";
 
 #if defined _MSC_VER
             // MSVC is confused by correct C++ syntax...
