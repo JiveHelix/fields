@@ -23,10 +23,22 @@ class FieldsConan(ConanFile):
 
     generators = "cmake"
 
+    options = {
+        "CMAKE_TRY_COMPILE_TARGET_TYPE":
+            ["EXECUTABLE", "STATIC_LIBRARY", None]}
+
+    default_options = {
+        "CMAKE_TRY_COMPILE_TARGET_TYPE": None}
+
     no_copy_source = True
 
     def build(self):
         cmake = CMake(self)
+
+        if (self.options.CMAKE_TRY_COMPILE_TARGET_TYPE):
+            cmake.definitions["CMAKE_TRY_COMPILE_TARGET_TYPE"] = \
+                self.options.CMAKE_TRY_COMPILE_TARGET_TYPE
+
         cmake.configure()
         cmake.build()
 
