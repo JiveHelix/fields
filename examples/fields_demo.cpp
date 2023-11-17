@@ -51,10 +51,12 @@ struct Groot
     constexpr static auto fieldsTypeName = "Groot";
 
 #if 0
-    template<typename Colors, typename VerboseTypes>
-    std::ostream & Describe(std::ostream &outputStream, int) const
+    std::ostream & Describe(
+        std::ostream &outputStream,
+        const fields::DescribeOptions &,
+        int) const
     {
-        return outputStream << "I am Groot";
+        return outputStream << "Describe: I am Groot";
     }
 #endif
 
@@ -63,10 +65,14 @@ struct Groot
 
 
 
-#if 1
-std::ostream & DoDescribe(std::ostream &outputStream, const Groot &, int)
+#if 0
+std::ostream & DoDescribe(
+    std::ostream &outputStream,
+    const Groot &,
+    const fields::DescribeOptions &,
+    int)
 {
-    return outputStream << "I am Groot";
+    return outputStream << "DoDescribe: I am Groot";
 }
 #endif
 

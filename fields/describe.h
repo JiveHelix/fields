@@ -36,37 +36,119 @@ struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>>>
 namespace fields
 {
 
+struct DefaultColors
+{
+    static constexpr auto name = jive::color::green;
+    static constexpr auto structure = jive::color::cyan;
+    static constexpr auto type = jive::color::yellow;
+};
+
+
+struct NoColor
+{
+    static constexpr auto name = "";
+    static constexpr auto structure = "";
+    static constexpr auto type = "";
+};
+
+
+struct Colors
+{
+    const char *name;
+    const char *structure;
+    const char *type;
+
+    Colors()
+        :
+        name(DefaultColors::name),
+        structure(DefaultColors::structure),
+        type(DefaultColors::type)
+    {
+
+    }
+
+    template<typename T>
+    static Colors Create()
+    {
+        Colors result;
+        result.name = T::name;
+        result.structure = T::structure;
+        result.type = T::type;
+
+        return result;
+    }
+
+    Colors & Name(const char *name_)
+    {
+        this->name = name_;
+        return *this;
+    }
+
+    Colors & Structure(const char *structure_)
+    {
+        this->structure = structure_;
+        return *this;
+    }
+
+    Colors & Type(const char *type_)
+    {
+        this->type = type_;
+        return *this;
+    }
+};
+
+
+struct DescribeOptions
+{
+    Colors colors;
+    bool verbose;
+
+    DescribeOptions()
+        :
+        colors(),
+        verbose(false)
+    {
+
+    }
+
+    DescribeOptions(const Colors &colors_, bool verbose_)
+        :
+        colors(colors_),
+        verbose(verbose_)
+    {
+
+    }
+};
+
+
 /** Optionally, a class can provide it's own Describe method.
- ** Must be a templated member method like
+ ** Must be a member function like
  **
- ** template<typename Colors, typename VerboseTypes>
- ** std::ostream & Describe(std::ostream &, int indent);
+ ** std::ostream & Describe(std::ostream &, const DescribeOptions &, int) const;
  **
  **/
-template<typename T, typename Colors, typename VerboseTypes, typename = void>
+template<typename T, typename = void>
 struct ImplementsDescribe_: std::false_type {};
 
-template<typename T, typename Colors, typename VerboseTypes>
+template<typename T>
 struct ImplementsDescribe_<
     T,
-    Colors,
-    VerboseTypes,
     std::void_t<
         std::enable_if_t<
             std::is_same_v<
                 std::ostream &,
                 decltype(
-                    std::declval<T>().template Describe<
-                        Colors,
-                        VerboseTypes>(std::declval<std::ostream &>(), int()))
+                    std::declval<T>().Describe(
+                        std::declval<std::ostream &>(),
+                        std::declval<DescribeOptions>(),
+                        std::declval<int>()))
             >
         >
     >
 >: std::true_type {};
 
-template<typename T, typename Colors, typename VerboseTypes>
-inline constexpr bool ImplementsDescribe =
-    ImplementsDescribe_<T, Colors, VerboseTypes>::value;
+template<typename T>
+inline constexpr bool ImplementsDescribe = ImplementsDescribe_<T>::value;
 
 
 template<typename T, typename = void>
@@ -84,7 +166,8 @@ struct HasDoDescribe_
                     DoDescribe(
                         std::declval<std::ostream &>(),
                         std::declval<T>(),
-                        int()))
+                        std::declval<DescribeOptions>(),
+                        std::declval<int>()))
             >
         >
     >
@@ -94,43 +177,24 @@ template<typename T>
 inline constexpr bool HasDoDescribe = HasDoDescribe_<T>::value;
 
 
-template<typename T, typename Colors, typename VerboseTypes, typename = void>
+template<typename T, typename = void>
 struct CanDescribe_: std::false_type {};
 
 
-template<typename T, typename Colors, typename VerboseTypes>
+template<typename T>
 struct CanDescribe_
 <
     T,
-    Colors,
-    VerboseTypes,
     std::enable_if_t
     <
         HasFields<T>
-        || ImplementsDescribe<T, Colors, VerboseTypes>
+        || ImplementsDescribe<T>
         || HasDoDescribe<T>
     >
 >: std::true_type {};
 
-template<typename T, typename Colors, typename VerboseTypes>
-inline constexpr bool CanDescribe =
-    CanDescribe_<T, Colors, VerboseTypes>::value;
-
-
-struct DefaultColors
-{
-    static constexpr auto name = jive::color::green;
-    static constexpr auto structure = jive::color::cyan;
-    static constexpr auto type = jive::color::yellow;
-};
-
-
-struct NoColor
-{
-    static constexpr auto name = "";
-    static constexpr auto structure = "";
-    static constexpr auto type = "";
-};
+template<typename T>
+inline constexpr bool CanDescribe = CanDescribe_<T>::value;
 
 
 template<
@@ -144,7 +208,7 @@ template<typename T, typename Colors = DefaultColors>
 auto DescribeColorized(const T &object, int indent = -1)
 {
     static_assert(
-        CanDescribe<T, Colors, std::false_type>,
+        CanDescribe<T>,
         "Type cannot be described");
 
     return Describe<T, Colors>(object, indent);
@@ -155,7 +219,7 @@ template<typename T, typename Colors = DefaultColors>
 auto DescribeColorizedVerbose(const T &object, int indent = -1)
 {
     static_assert(
-        CanDescribe<T, Colors, std::true_type>,
+        CanDescribe<T>,
         "Type cannot be described");
 
     return Describe<T, Colors, std::true_type>(object, indent);
@@ -166,7 +230,7 @@ template<typename T, typename Colors = DefaultColors>
 auto DescribeCompact(const T &object, int indent = -1)
 {
     static_assert(
-        CanDescribe<T, Colors, std::false_type>,
+        CanDescribe<T>,
         "Type cannot be described");
 
     return Describe<T, Colors, std::false_type>(object, indent);
@@ -177,7 +241,7 @@ template<typename T, typename Colors, typename VerboseTypes>
 std::string ToString(const Describe<T, Colors, VerboseTypes> &describe)
 {
     static_assert(
-        CanDescribe<T, Colors, VerboseTypes>,
+        CanDescribe<T>,
         "Type cannot be described");
 
     std::ostringstream outputStream;
@@ -234,7 +298,7 @@ GNU_NO_RESTRICT_POP
 }
 
 
-template<typename T, typename Colors, typename VerboseTypes>
+template<typename T, typename ColorsType, typename VerboseTypes>
 class Describe
 {
 public:
@@ -242,7 +306,8 @@ public:
         :
         object_{object},
         name_{name},
-        indent_{indent}
+        indent_{indent},
+        options_(Colors::Create<ColorsType>(), VerboseTypes::value)
     {
 
     }
@@ -251,13 +316,33 @@ public:
         :
         object_{object},
         name_{},
-        indent_{indent}
+        indent_{indent},
+        options_(Colors::Create<ColorsType>(), VerboseTypes::value)
     {
 
     }
 
     // We are storing a const reference. Disallow temporaries.
     Describe(T &&object, const std::string &name) = delete;
+
+    Describe & Colors(const Colors &colors)
+    {
+        this->options_.colors = colors;
+        return *this;
+    }
+
+    Describe & Verbose(bool verbose)
+    {
+        this->options_.verbose = verbose;
+        return *this;
+    }
+
+    Describe & Options(const DescribeOptions &options)
+    {
+        this->options_ = options;
+        return *this;
+    }
+
 
     std::string GetIndent() const
     {
@@ -294,11 +379,11 @@ public:
 
         for (const auto & [key, value]: mapLike)
         {
-            outputStream <<
-                Describe<typename Object::mapped_type, Colors, VerboseTypes>(
-                    value,
-                    KeyToString(key),
-                    (this->indent_ < 0) ? -1 : this->indent_ + 1);
+            outputStream << Describe<typename Object::mapped_type>(
+                value,
+                KeyToString(key),
+                (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                    .Options(this->options_);
 
             ++count;
 
@@ -321,11 +406,11 @@ public:
 
         for (const auto &value: container)
         {
-            outputStream <<
-                Describe<typename Object::value_type, Colors, VerboseTypes>(
-                    value,
-                    std::to_string(count),
-                    (this->indent_ < 0) ? -1 : this->indent_ + 1);
+            outputStream << Describe<typename Object::value_type>(
+                value,
+                std::to_string(count),
+                (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                    .Options(this->options_);
 
             ++count;
 
@@ -348,9 +433,10 @@ public:
         // Don't print a comma before the first member.
         ((outputStream << (I == 0 ? "[" : ", ") <<
             /* Recursively wrap each member in Describe */
-            Describe<Object, Colors, VerboseTypes>(
+            Describe<Object>(
                 array[I],
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                    .Options(this->options_)
             << (I == N - 1 ? "]" : "")),
          ...);
 
@@ -379,10 +465,11 @@ public:
         // Don't print a comma before the first member.
         ((outputStream << (I == 0 ? "" : ", ") <<
             /* Recursively wrap each member in Describe */
-            Describe<FieldElementType<I, Fields>, Colors, VerboseTypes>(
+            Describe<FieldElementType<I, Fields>>(
                 object.*(std::get<I>(fields).member),
                 std::get<I>(fields).name,
-                (this->indent_ < 0) ? -1 : this->indent_ + 1)),
+                (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                    .Options(this->options_)),
          ...);
 
         return outputStream;
@@ -417,13 +504,14 @@ public:
 
         if (!this->name_.empty())
         {
-            colorize(Colors::name, this->name_, ": ");
+            colorize(this->options_.colors.name, this->name_, ": ");
         }
 
-        if constexpr (ImplementsDescribe<T, Colors, VerboseTypes>)
+        if constexpr (ImplementsDescribe<T>)
         {
-            this->object_.template Describe<Colors, VerboseTypes>(
+            this->object_.Describe(
                 outputStream,
+                this->options_,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
         }
         else if constexpr (HasDoDescribe<T>)
@@ -431,11 +519,12 @@ public:
             DoDescribe(
                 outputStream,
                 this->object_,
+                this->options_,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
         }
         else if constexpr (HasFields<T>)
         {
-            colorize(Colors::structure, jive::GetTypeName<T>());
+            colorize(this->options_.colors.structure, jive::GetTypeName<T>());
             outputStream << "(";
 
 #if defined _MSC_VER
@@ -455,9 +544,9 @@ public:
         {
             // There are no fields classes, so get a string representation of
             // the object directly.
-            if constexpr (VerboseTypes::value)
+            if (this->options_.verbose)
             {
-                colorize(Colors::type, jive::GetTypeName<T>());
+                colorize(this->options_.colors.type, jive::GetTypeName<T>());
                 outputStream << " = ";
             }
 
@@ -493,11 +582,10 @@ public:
                 {
                     outputStream <<
                         Describe<
-                                std::remove_const_t<std::remove_pointer_t<T>>,
-                                Colors,
-                                VerboseTypes>(
+                                std::remove_const_t<std::remove_pointer_t<T>>>(
                             *(this->object_),
-                            (this->indent_ < 0) ? -1 : this->indent_ + 1);
+                            (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                                .Options(this->options_);
                 }
             }
             else
@@ -520,6 +608,7 @@ private:
     const T &object_;
     std::string name_;
     int indent_;
+    DescribeOptions options_;
 
 };
 
