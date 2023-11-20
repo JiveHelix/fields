@@ -53,7 +53,7 @@ struct Groot
 #if 0
     std::ostream & Describe(
         std::ostream &outputStream,
-        const fields::DescribeOptions &,
+        const fields::Style &,
         int) const
     {
         return outputStream << "Describe: I am Groot";
@@ -64,12 +64,11 @@ struct Groot
 };
 
 
-
 #if 0
 std::ostream & DoDescribe(
     std::ostream &outputStream,
     const Groot &,
-    const fields::DescribeOptions &,
+    const fields::Style &,
     int)
 {
     return outputStream << "DoDescribe: I am Groot";

@@ -98,12 +98,12 @@ struct Colors
 };
 
 
-struct DescribeOptions
+struct Style
 {
     Colors colors;
     bool verbose;
 
-    DescribeOptions()
+    Style()
         :
         colors(),
         verbose(false)
@@ -111,7 +111,7 @@ struct DescribeOptions
 
     }
 
-    DescribeOptions(const Colors &colors_, bool verbose_)
+    Style(const Colors &colors_, bool verbose_)
         :
         colors(colors_),
         verbose(verbose_)
@@ -124,7 +124,7 @@ struct DescribeOptions
 /** Optionally, a class can provide it's own Describe method.
  ** Must be a member function like
  **
- ** std::ostream & Describe(std::ostream &, const DescribeOptions &, int) const;
+ ** std::ostream & Describe(std::ostream &, const Style &, int) const;
  **
  **/
 template<typename T, typename = void>
@@ -140,7 +140,7 @@ struct ImplementsDescribe_<
                 decltype(
                     std::declval<T>().Describe(
                         std::declval<std::ostream &>(),
-                        std::declval<DescribeOptions>(),
+                        std::declval<Style>(),
                         std::declval<int>()))
             >
         >
@@ -166,7 +166,7 @@ struct HasDoDescribe_
                     DoDescribe(
                         std::declval<std::ostream &>(),
                         std::declval<T>(),
-                        std::declval<DescribeOptions>(),
+                        std::declval<Style>(),
                         std::declval<int>()))
             >
         >
@@ -307,7 +307,7 @@ public:
         object_{object},
         name_{name},
         indent_{indent},
-        options_(Colors::Create<ColorsType>(), VerboseTypes::value)
+        style_(Colors::Create<ColorsType>(), VerboseTypes::value)
     {
 
     }
@@ -317,7 +317,7 @@ public:
         object_{object},
         name_{},
         indent_{indent},
-        options_(Colors::Create<ColorsType>(), VerboseTypes::value)
+        style_(Colors::Create<ColorsType>(), VerboseTypes::value)
     {
 
     }
@@ -327,19 +327,19 @@ public:
 
     Describe & Colors(const Colors &colors)
     {
-        this->options_.colors = colors;
+        this->style_.colors = colors;
         return *this;
     }
 
     Describe & Verbose(bool verbose)
     {
-        this->options_.verbose = verbose;
+        this->style_.verbose = verbose;
         return *this;
     }
 
-    Describe & Options(const DescribeOptions &options)
+    Describe & Style(const Style &options)
     {
-        this->options_ = options;
+        this->style_ = options;
         return *this;
     }
 
@@ -383,7 +383,7 @@ public:
                 value,
                 KeyToString(key),
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)
-                    .Options(this->options_);
+                    .Style(this->style_);
 
             ++count;
 
@@ -410,7 +410,7 @@ public:
                 value,
                 std::to_string(count),
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)
-                    .Options(this->options_);
+                    .Style(this->style_);
 
             ++count;
 
@@ -436,7 +436,7 @@ public:
             Describe<Object>(
                 array[I],
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)
-                    .Options(this->options_)
+                    .Style(this->style_)
             << (I == N - 1 ? "]" : "")),
          ...);
 
@@ -469,7 +469,7 @@ public:
                 object.*(std::get<I>(fields).member),
                 std::get<I>(fields).name,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)
-                    .Options(this->options_)),
+                    .Style(this->style_)),
          ...);
 
         return outputStream;
@@ -504,14 +504,14 @@ public:
 
         if (!this->name_.empty())
         {
-            colorize(this->options_.colors.name, this->name_, ": ");
+            colorize(this->style_.colors.name, this->name_, ": ");
         }
 
         if constexpr (ImplementsDescribe<T>)
         {
             this->object_.Describe(
                 outputStream,
-                this->options_,
+                this->style_,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
         }
         else if constexpr (HasDoDescribe<T>)
@@ -519,12 +519,12 @@ public:
             DoDescribe(
                 outputStream,
                 this->object_,
-                this->options_,
+                this->style_,
                 (this->indent_ < 0) ? -1 : this->indent_ + 1);
         }
         else if constexpr (HasFields<T>)
         {
-            colorize(this->options_.colors.structure, jive::GetTypeName<T>());
+            colorize(this->style_.colors.structure, jive::GetTypeName<T>());
             outputStream << "(";
 
 #if defined _MSC_VER
@@ -544,9 +544,9 @@ public:
         {
             // There are no fields classes, so get a string representation of
             // the object directly.
-            if (this->options_.verbose)
+            if (this->style_.verbose)
             {
-                colorize(this->options_.colors.type, jive::GetTypeName<T>());
+                colorize(this->style_.colors.type, jive::GetTypeName<T>());
                 outputStream << " = ";
             }
 
@@ -585,7 +585,7 @@ public:
                                 std::remove_const_t<std::remove_pointer_t<T>>>(
                             *(this->object_),
                             (this->indent_ < 0) ? -1 : this->indent_ + 1)
-                                .Options(this->options_);
+                                .Style(this->style_);
                 }
             }
             else
@@ -608,7 +608,7 @@ private:
     const T &object_;
     std::string name_;
     int indent_;
-    DescribeOptions options_;
+    struct Style style_;
 
 };
 
