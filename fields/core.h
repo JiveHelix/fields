@@ -48,7 +48,7 @@ struct Field
 // To meet the requirement of a class that implements Fields, a class must
 // define a static tuple of Fields describing the class members that will
 // participate.
-template<typename, typename = std::void_t<>>
+template<typename, typename = void>
 struct HasFields_: std::false_type {};
 
 template<typename T>
@@ -60,7 +60,7 @@ inline constexpr bool HasFields = HasFields_<T>::value;
 
 
 // Optionally, a class can name itself
-template<typename, typename = std::void_t<>>
+template<typename, typename = void>
 struct HasFieldsTypeName_: std::false_type {};
 
 template<typename T>
@@ -71,7 +71,7 @@ template<typename T>
 inline constexpr bool HasFieldsTypeName = HasFieldsTypeName_<T>::value;
 
 
-template<typename T, typename = std::void_t<>>
+template<typename T, typename = void>
 struct ImplementsAfterFields_: std::false_type {};
 
 template<typename T>
@@ -110,12 +110,12 @@ template<typename T, typename Json>
 struct ImplementsUnstructure_<
     T,
     Json,
-    std::void_t<
-        std::enable_if_t<
-            std::is_same_v<
-                Json,
-                decltype(std::declval<T>().template Unstructure<Json>())
-            >
+    std::enable_if_t
+    <
+        std::is_same_v
+        <
+            Json,
+            decltype(std::declval<T>().template Unstructure<Json>())
         >
     >
 >: std::true_type {};
@@ -125,7 +125,7 @@ inline constexpr bool ImplementsUnstructure =
     ImplementsUnstructure_<T, Json>::value;
 
 
-template<typename T, typename = std::void_t<>>
+template<typename T, typename = void>
 struct ImplementsDefault_: std::false_type {};
 
 template<typename T>

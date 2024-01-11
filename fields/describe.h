@@ -36,6 +36,15 @@ struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>>>
 namespace fields
 {
 
+template<typename T>
+struct IsOptional_: std::false_type {};
+
+template<typename T>
+struct IsOptional_<std::optional<T>>: std::true_type {};
+
+template<typename T>
+inline constexpr bool IsOptional = IsOptional_<T>::value;
+
 struct DefaultColors
 {
     static constexpr auto name = jive::color::green;
@@ -127,28 +136,28 @@ struct Style
  ** std::ostream & Describe(std::ostream &, const Style &, int) const;
  **
  **/
+
 template<typename T, typename = void>
-struct ImplementsDescribe_: std::false_type {};
+struct HasDescribe_: std::false_type {};
 
 template<typename T>
-struct ImplementsDescribe_<
+struct HasDescribe_<
     T,
-    std::void_t<
-        std::enable_if_t<
-            std::is_same_v<
-                std::ostream &,
-                decltype(
-                    std::declval<T>().Describe(
-                        std::declval<std::ostream &>(),
-                        std::declval<Style>(),
-                        std::declval<int>()))
-            >
+    std::enable_if_t<
+        std::is_same_v<
+            std::ostream &,
+            decltype(
+                std::declval<T>().Describe(
+                    std::declval<std::ostream &>(),
+                    std::declval<Style>(),
+                    std::declval<int>()))
         >
     >
 >: std::true_type {};
 
+
 template<typename T>
-inline constexpr bool ImplementsDescribe = ImplementsDescribe_<T>::value;
+inline constexpr bool HasDescribe = HasDescribe_<T>::value;
 
 
 template<typename T, typename = void>
@@ -158,20 +167,19 @@ template<typename T>
 struct HasDoDescribe_
 <
     T,
-    std::void_t<
-        std::enable_if_t<
-            std::is_same_v<
-                std::ostream &,
-                decltype(
-                    DoDescribe(
-                        std::declval<std::ostream &>(),
-                        std::declval<T>(),
-                        std::declval<Style>(),
-                        std::declval<int>()))
-            >
+    std::enable_if_t<
+        std::is_same_v<
+            std::ostream &,
+            decltype(
+                DoDescribe(
+                    std::declval<std::ostream &>(),
+                    std::declval<T>(),
+                    std::declval<Style>(),
+                    std::declval<int>()))
         >
     >
 >: std::true_type {};
+
 
 template<typename T>
 inline constexpr bool HasDoDescribe = HasDoDescribe_<T>::value;
@@ -188,7 +196,7 @@ struct CanDescribe_
     std::enable_if_t
     <
         HasFields<T>
-        || ImplementsDescribe<T>
+        || HasDescribe<T>
         || HasDoDescribe<T>
     >
 >: std::true_type {};
@@ -296,6 +304,58 @@ GNU_NO_RESTRICT_PUSH
 GNU_NO_RESTRICT_POP
 
 }
+
+
+template<typename Object, typename Fields, std::size_t... I>
+std::ostream & DescribeFields(
+    std::ostream &outputStream,
+    const Object &object,
+    const Fields &fields,
+    const Style &style,
+    int indent,
+    std::index_sequence<I...>)
+{
+    // Use a fold expression to print a comma between each member.
+    // Don't print a comma before the first member.
+    ((outputStream << (I == 0 ? "" : ", ") <<
+        /* Recursively wrap each member in Describe */
+        Describe<FieldElementType<I, Fields>>(
+            object.*(std::get<I>(fields).member),
+            std::get<I>(fields).name,
+            (indent < 0) ? -1 : indent + 1)
+                .Style(style)),
+     ...);
+
+    return outputStream;
+}
+
+template<typename Object, typename Fields>
+std::ostream & DescribeFields(
+    std::ostream &outputStream,
+    const Object &object,
+    const Fields &fields,
+    const Style &style,
+    int indent)
+{
+    constexpr auto itemCount = std::tuple_size<Fields>::value;
+
+    jive::Colorize colorize(outputStream);
+    colorize(style.colors.structure, jive::GetTypeName<Object>());
+    outputStream << "(";
+
+    DescribeFields(
+        outputStream,
+        object,
+        fields,
+        style,
+        indent,
+        std::make_index_sequence<itemCount>{});
+
+    return outputStream << ")";
+}
+
+
+
 
 
 template<typename T, typename ColorsType, typename VerboseTypes>
@@ -454,48 +514,6 @@ public:
             std::make_index_sequence<N>{});
     }
 
-    template<typename Object, typename Fields, std::size_t... I>
-    std::ostream & DescribeFields(
-        std::ostream &outputStream,
-        const Object &object,
-        const Fields &fields,
-        std::index_sequence<I...>) const
-    {
-        // Use a fold expression to print a comma between each member.
-        // Don't print a comma before the first member.
-        ((outputStream << (I == 0 ? "" : ", ") <<
-            /* Recursively wrap each member in Describe */
-            Describe<FieldElementType<I, Fields>>(
-                object.*(std::get<I>(fields).member),
-                std::get<I>(fields).name,
-                (this->indent_ < 0) ? -1 : this->indent_ + 1)
-                    .Style(this->style_)),
-         ...);
-
-        return outputStream;
-    }
-
-    template<typename Object, typename Fields>
-    std::ostream & DescribeFields(
-        std::ostream &outputStream,
-        const Object &object,
-        const Fields &fields) const
-    {
-        constexpr auto itemCount = std::tuple_size<Fields>::value;
-
-#if defined _MSC_VER
-        // MSVC is confused by correct C++ syntax...
-        return this->template Describe::DescribeFields(
-#else
-        // Clang and GCC are not
-        return this->template DescribeFields(
-#endif
-            outputStream,
-            object,
-            fields,
-            std::make_index_sequence<itemCount>{});
-    }
-
     std::ostream & operator()(std::ostream &outputStream) const
     {
         jive::Colorize colorize(outputStream);
@@ -507,7 +525,7 @@ public:
             colorize(this->style_.colors.name, this->name_, ": ");
         }
 
-        if constexpr (ImplementsDescribe<T>)
+        if constexpr (HasDescribe<T>)
         {
             this->object_.Describe(
                 outputStream,
@@ -524,21 +542,12 @@ public:
         }
         else if constexpr (HasFields<T>)
         {
-            colorize(this->style_.colors.structure, jive::GetTypeName<T>());
-            outputStream << "(";
-
-#if defined _MSC_VER
-            // MSVC is confused by correct C++ syntax...
-            this->template Describe::DescribeFields(
-#else
-            // Clang and GCC are not
-            this->template DescribeFields(
-#endif
+            DescribeFields(
                 outputStream,
                 this->object_,
-                T::fields);
-
-            outputStream << ")";
+                T::fields,
+                this->style_,
+                this->indent_);
         }
         else
         {
@@ -586,6 +595,21 @@ public:
                             *(this->object_),
                             (this->indent_ < 0) ? -1 : this->indent_ + 1)
                                 .Style(this->style_);
+                }
+            }
+            else if constexpr (IsOptional<T>)
+            {
+                using ValueType = typename T::value_type;
+
+                if (this->object_)
+                {
+                    outputStream <<
+                        Describe<ValueType>(*(this->object_), this->indent_)
+                            .Style(this->style_);
+                }
+                else
+                {
+                    outputStream << "None";
                 }
             }
             else

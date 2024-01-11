@@ -3,7 +3,7 @@ from conans import ConanFile, CMake
 
 class FieldsConan(ConanFile):
     name = "fields"
-    version = "1.3.3"
+    version = "1.3.4"
 
     scm = {
         "type": "git",

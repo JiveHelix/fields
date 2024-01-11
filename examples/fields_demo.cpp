@@ -196,6 +196,26 @@ void PrintFieldType(Field &&field)
 }
 
 
+struct Rocket
+{
+    int x;
+    long y;
+    std::optional<double> z;
+
+    constexpr static auto fields = std::make_tuple(
+        fields::Field(&Rocket::x, "x"),
+        fields::Field(&Rocket::y, "y"),
+        fields::Field(&Rocket::z, "z"));
+
+    constexpr static auto fieldsTypeName = "Rocket";
+    static constexpr size_t precision = 3;
+};
+
+
+using OptionalZ = std::optional<double>;
+static_assert(fields::IsOptional<OptionalZ>);
+
+
 int main()
 {
     Wobble original{
@@ -263,6 +283,12 @@ int main()
 
     std::cout << "\nDescribeAlteredVerbose: " << std::endl;
     std::cout << DescribeAlteredVerbose(recovered, 0) << std::endl;
+
+    Rocket rocket{1, 2, {}};
+    std::cout << fields::DescribeColorized(rocket) << std::endl;
+
+    rocket.z = 42.0;
+    std::cout << fields::DescribeColorized(rocket) << std::endl;
 
     return 0;
 }
