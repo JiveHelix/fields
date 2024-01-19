@@ -24,8 +24,8 @@ std::enable_if_t<
     bool>
 operator==(const T &left, const T &right)
 {
-    return fields::detail::ComparisonTuple(left)
-        == fields::detail::ComparisonTuple(right);
+    return fields::ComparisonTuple(left)
+        == fields::ComparisonTuple(right);
 }
 
 template <typename T>
@@ -34,8 +34,8 @@ std::enable_if_t<
     bool>
 operator!=(const T &left, const T &right)
 {
-    return fields::detail::ComparisonTuple(left)
-        != fields::detail::ComparisonTuple(right);
+    return fields::ComparisonTuple(left)
+        != fields::ComparisonTuple(right);
 }
 
 template <typename T>
@@ -43,8 +43,8 @@ std::
     enable_if_t<(fields::HasFields<T> && !jive::HasLess<T>), bool>
     operator<(const T &left, const T &right)
 {
-    return fields::detail::ComparisonTuple(left)
-        < fields::detail::ComparisonTuple(right);
+    return fields::ComparisonTuple(left)
+        < fields::ComparisonTuple(right);
 }
 
 template <typename T>
@@ -53,8 +53,8 @@ std::enable_if_t<
     bool>
 operator>(const T &left, const T &right)
 {
-    return fields::detail::ComparisonTuple(left)
-        > fields::detail::ComparisonTuple(right);
+    return fields::ComparisonTuple(left)
+        > fields::ComparisonTuple(right);
 }
 
 

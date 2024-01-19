@@ -21,15 +21,45 @@
 namespace fields
 {
 
+template<ssize_t precision, typename T>
+constexpr auto PrecisionCompare(const T &value);
+
+
 namespace detail
 {
+    template<typename, typename = void>
+    struct HasPrecision: std::false_type {};
+
+    template<typename T>
+    struct HasPrecision
+    <
+        T,
+        std::void_t
+        <
+            std::enable_if_t
+            <
+                std::is_convertible_v<decltype(T::precision), ssize_t>
+            >
+        >
+    > : std::true_type {};
+
     template<ssize_t precision, typename T>
     bool Equal(const T& value, const T& other)
     {
         if constexpr (fields::HasFields<T>)
         {
-            // Use the operator== of the fields class.
-            return value == other;
+            if constexpr (!HasPrecision<T>::value)
+            {
+                // There is no precision specified on the inner fields class.
+                // Use the precision of the outer container.
+                return PrecisionCompare<precision>(value)
+                    == PrecisionCompare<precision>(other);
+            }
+            else
+            {
+                // Use the operator== of the fields class.
+                return value == other;
+            }
         }
         else
         {
@@ -163,22 +193,6 @@ namespace detail
     };
 
 
-    template<typename, typename = void>
-    struct HasPrecision: std::false_type {};
-
-
-    template<typename T>
-    struct HasPrecision
-    <
-        T,
-        std::void_t
-        <
-            std::enable_if_t
-            <
-                std::is_convertible_v<decltype(T::precision), ssize_t>
-            >
-        >
-    > : std::true_type {};
 
     template<typename T, typename = void>
     struct Precision
@@ -207,193 +221,186 @@ namespace detail
         return Compare<precision, T>(value);
     }
 
-    template<typename T, std::size_t... I>
-    constexpr auto ComparisonTuple(
-            const T &object,
-            std::index_sequence<I...>)
+    // Build up a list of indices to fields that participate in comparisons.
+    template<typename T, typename Fields, size_t Count, size_t... I>
+    constexpr auto SelectFields(const T &object, const Fields &fields)
     {
-        return std::make_tuple(
-            MakeCompare<Precision<T>::value>(
-                object.*(std::get<I>(T::fields).member))...);
-    }
-
-    template<typename T>
-    constexpr auto ComparisonTuple(const T &object)
-    {
-        static_assert(
-            fields::HasFields<T>,
-            "Missing required fields tuple");
-
-        constexpr auto propertyCount =
-            std::tuple_size<decltype(T::fields)>::value;
-
-        return ComparisonTuple(
-            object,
-            std::make_index_sequence<propertyCount>{});
-    }
-
-} // end namespace detail
-
-
-template<typename T, typename Fields, size_t Count, size_t... I>
-constexpr auto SelectFields(const T &object, const Fields &fields)
-{
-    if constexpr (Count == 0)
-    {
-        return std::index_sequence<I...>();
-    }
-    else
-    {
-        using MemberType = typename std::remove_reference_t
-            <
-                decltype(object.*(std::get<Count - 1>(fields).member))
-            >;
-
-        if constexpr (std::is_empty_v<MemberType>)
+        if constexpr (Count == 0)
         {
-            // Empty types do not participate in comparisons.
-            // Skip this field.
-            return SelectFields<T, Fields, Count - 1, I...>(object, fields);
+            return std::index_sequence<I...>();
         }
         else
         {
-            return SelectFields<T, Fields, Count - 1, Count - 1, I...>(
-                object,
-                fields);
+            using MemberType = typename std::remove_reference_t
+                <
+                    decltype(object.*(std::get<Count - 1>(fields).member))
+                >;
+
+            if constexpr (std::is_empty_v<MemberType>)
+            {
+                // Empty types do not participate in comparisons.
+                // Skip this field.
+                return SelectFields<T, Fields, Count - 1, I...>(object, fields);
+            }
+            else
+            {
+                return SelectFields<T, Fields, Count - 1, Count - 1, I...>(
+                    object,
+                    fields);
+            }
         }
     }
-}
+} // end namespace detail
 
 
-template<typename T, typename Fields, std::size_t... I>
+template<ssize_t precision, typename T, std::size_t... I>
 constexpr auto ComparisonTuple(
-    const T &object,
-    Fields &&fields,
-    std::index_sequence<I...>)
+        const T &object,
+        std::index_sequence<I...>)
 {
     return std::make_tuple(
-        detail::MakeCompare<detail::Precision<T>::value>(
-            object.*(std::get<I>(fields).member))...);
+        detail::MakeCompare<precision>(
+            object.*(std::get<I>(T::fields).member))...);
 }
 
-template<typename T, typename Fields>
-constexpr auto ComparisonTuple(const T &object, Fields &&fields)
+template<typename T>
+constexpr auto ComparisonTuple(const T &object)
 {
-    constexpr auto propertyCount =
-        std::tuple_size<std::remove_reference_t<decltype(fields)>>::value;
+    static_assert(
+        fields::HasFields<T>,
+        "Missing required fields tuple");
 
-    return ComparisonTuple(
+    using Fields = decltype(T::fields);
+
+    constexpr auto propertyCount = std::tuple_size<Fields>::value;
+
+    return ComparisonTuple<detail::Precision<T>::value>(
         object,
-        std::forward<Fields>(fields),
-        SelectFields<T, Fields, propertyCount>(object, fields));
+        detail::SelectFields<T, Fields, propertyCount>(object, T::fields));
+}
+
+template<ssize_t precision, typename T>
+constexpr auto PrecisionCompare(const T &value)
+{
+    static_assert(
+        fields::HasFields<T>,
+        "Missing required fields tuple");
+
+    using Fields = decltype(T::fields);
+
+    constexpr auto propertyCount = std::tuple_size<Fields>::value;
+
+    return ComparisonTuple<precision>(
+        value,
+        detail::SelectFields<T, Fields, propertyCount>(value, T::fields));
 }
 
 
 } // end namespace fields
 
 
-#define DECLARE_OPERATOR_EQUALS(Type, fieldsTuple)              \
+#define DECLARE_OPERATOR_EQUALS(Type)              \
     inline bool operator==(const Type &left, const Type &right) \
     {                                                           \
-        return fields::ComparisonTuple(left, fieldsTuple)       \
-            == fields::ComparisonTuple(right, fieldsTuple);     \
+        return fields::ComparisonTuple(left)       \
+            == fields::ComparisonTuple(right);     \
     }
 
-#define DECLARE_OPERATOR_NOT_EQUALS(Type, fieldsTuple)          \
+#define DECLARE_OPERATOR_NOT_EQUALS(Type)          \
     inline bool operator!=(const Type &left, const Type &right) \
     {                                                           \
-        return fields::ComparisonTuple(left, fieldsTuple)       \
-            != fields::ComparisonTuple(right, fieldsTuple);     \
+        return fields::ComparisonTuple(left)       \
+            != fields::ComparisonTuple(right);     \
     }
 
-#define DECLARE_OPERATOR_LESS_THAN(Type, fieldsTuple)          \
+#define DECLARE_OPERATOR_LESS_THAN(Type)          \
     inline bool operator<(const Type &left, const Type &right) \
     {                                                          \
-        return fields::ComparisonTuple(left, fieldsTuple)      \
-            < fields::ComparisonTuple(right, fieldsTuple);     \
+        return fields::ComparisonTuple(left)      \
+            < fields::ComparisonTuple(right);     \
     }
 
-#define DECLARE_OPERATOR_GREATER_THAN(Type, fieldsTuple)       \
+#define DECLARE_OPERATOR_GREATER_THAN(Type)       \
     inline bool operator>(const Type &left, const Type &right) \
     {                                                          \
-        return fields::ComparisonTuple(left, fieldsTuple)      \
-            > fields::ComparisonTuple(right, fieldsTuple);     \
+        return fields::ComparisonTuple(left)      \
+            > fields::ComparisonTuple(right);     \
     }
 
-#define DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, fieldsTuple)    \
+#define DECLARE_OPERATOR_LESS_THAN_EQUALS(Type)    \
     inline bool operator<=(const Type &left, const Type &right) \
     {                                                           \
-        return fields::ComparisonTuple(left, fieldsTuple)       \
-            <= fields::ComparisonTuple(right, fieldsTuple);     \
+        return fields::ComparisonTuple(left)       \
+            <= fields::ComparisonTuple(right);     \
     }
 
-#define DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, fieldsTuple) \
+#define DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type) \
     inline bool operator>=(const Type &left, const Type &right) \
     {                                                           \
-        return fields::ComparisonTuple(left, fieldsTuple)       \
-            >= fields::ComparisonTuple(right, fieldsTuple);     \
+        return fields::ComparisonTuple(left)       \
+            >= fields::ComparisonTuple(right);     \
     }
 
 
 #define DECLARE_EQUALITY_OPERATORS(Type)                        \
-    DECLARE_OPERATOR_EQUALS(Type, Type::fields)                 \
-    DECLARE_OPERATOR_NOT_EQUALS(Type, Type::fields)
+    DECLARE_OPERATOR_EQUALS(Type)                 \
+    DECLARE_OPERATOR_NOT_EQUALS(Type)
 
 
 #define DECLARE_COMPARISON_OPERATORS(Type)                      \
     DECLARE_EQUALITY_OPERATORS(Type)                            \
-    DECLARE_OPERATOR_LESS_THAN(Type, Type::fields)              \
-    DECLARE_OPERATOR_GREATER_THAN(Type, Type::fields)           \
-    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type, Type::fields)       \
-    DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type, Type::fields)
+    DECLARE_OPERATOR_LESS_THAN(Type)              \
+    DECLARE_OPERATOR_GREATER_THAN(Type)           \
+    DECLARE_OPERATOR_LESS_THAN_EQUALS(Type)       \
+    DECLARE_OPERATOR_GREATER_THAN_EQUALS(Type)
 
 
 #define TEMPLATE_OPERATOR_EQUALS(Type)                          \
     template <typename T>                                       \
     bool operator==(const Type<T> &left, const Type<T> &right)  \
     {                                                           \
-        return fields::ComparisonTuple(left, Type<T>::fields)   \
-            == fields::ComparisonTuple(right, Type<T>::fields); \
+        return fields::ComparisonTuple(left)   \
+            == fields::ComparisonTuple(right); \
     }
 
 #define TEMPLATE_OPERATOR_NOT_EQUALS(Type)                      \
     template <typename T>                                       \
     bool operator!=(const Type<T> &left, const Type<T> &right)  \
     {                                                           \
-        return fields::ComparisonTuple(left, Type<T>::fields)   \
-            != fields::ComparisonTuple(right, Type<T>::fields); \
+        return fields::ComparisonTuple(left)   \
+            != fields::ComparisonTuple(right); \
     }
 
 #define TEMPLATE_OPERATOR_LESS_THAN(Type)                      \
     template <typename T>                                      \
     bool operator<(const Type<T> &left, const Type<T> &right)  \
     {                                                          \
-        return fields::ComparisonTuple(left, Type<T>::fields)  \
-            < fields::ComparisonTuple(right, Type<T>::fields); \
+        return fields::ComparisonTuple(left)  \
+            < fields::ComparisonTuple(right); \
     }
 
 #define TEMPLATE_OPERATOR_GREATER_THAN(Type)                   \
     template <typename T>                                      \
     bool operator>(const Type<T> &left, const Type<T> &right)  \
     {                                                          \
-        return fields::ComparisonTuple(left, Type<T>::fields)  \
-            > fields::ComparisonTuple(right, Type<T>::fields); \
+        return fields::ComparisonTuple(left)  \
+            > fields::ComparisonTuple(right); \
     }
 
 #define TEMPLATE_OPERATOR_LESS_THAN_EQUALS(Type)                \
     template <typename T>                                       \
     bool operator<=(const Type<T> &left, const Type<T> &right)  \
     {                                                           \
-        return fields::ComparisonTuple(left, Type<T>::fields)   \
-            <= fields::ComparisonTuple(right, Type<T>::fields); \
+        return fields::ComparisonTuple(left)   \
+            <= fields::ComparisonTuple(right); \
     }
 
 #define TEMPLATE_OPERATOR_GREATER_THAN_EQUALS(Type)             \
     template <typename T>                                       \
     bool operator>=(const Type<T> &left, const Type<T> &right)  \
     {                                                           \
-        return fields::ComparisonTuple(left, Type<T>::fields)   \
-            >= fields::ComparisonTuple(right, Type<T>::fields); \
+        return fields::ComparisonTuple(left)   \
+            >= fields::ComparisonTuple(right); \
     }
 
 
