@@ -37,6 +37,50 @@ using json = nlohmann::json;
 #include <fields/describe.h>
 
 
+enum class Python: uint8_t
+{
+    chapman,
+    cleese,
+    gilliam,
+    idle,
+    jones,
+    palin
+};
+
+
+inline
+std::ostream & DoDescribe(
+    std::ostream &outputStream,
+    Python python,
+    const fields::Style &,
+    int)
+{
+    switch (python)
+    {
+        case Python::chapman:
+            return outputStream << "Graham Chapman";
+
+        case Python::cleese:
+            return outputStream << "John Cleese";
+
+        case Python::gilliam:
+            return outputStream << "Terry Gilliam";
+
+        case Python::idle:
+            return outputStream << "Eric Idle";
+
+        case Python::jones:
+            return outputStream << "Terry Jones";
+
+        case Python::palin:
+            return outputStream << "Michael Palin";
+
+        default:
+            throw std::runtime_error("Unkown Python");
+    }
+}
+
+
 struct Groot
 {
     int x;
@@ -198,11 +242,13 @@ void PrintFieldType(Field &&field)
 
 struct Rocket
 {
+    Python python;
     int x;
     long y;
     std::optional<double> z;
 
     constexpr static auto fields = std::make_tuple(
+        fields::Field(&Rocket::python, "python"),
         fields::Field(&Rocket::x, "x"),
         fields::Field(&Rocket::y, "y"),
         fields::Field(&Rocket::z, "z"));
@@ -284,7 +330,7 @@ int main()
     std::cout << "\nDescribeAlteredVerbose: " << std::endl;
     std::cout << DescribeAlteredVerbose(recovered, 0) << std::endl;
 
-    Rocket rocket{1, 2, {}};
+    Rocket rocket{Python::gilliam, 1, 2, {}};
     std::cout << fields::DescribeColorized(rocket) << std::endl;
 
     rocket.z = 42.0;
