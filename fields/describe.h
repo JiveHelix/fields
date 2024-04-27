@@ -590,8 +590,10 @@ public:
                 if (this->object_ != nullptr)
                 {
                     outputStream <<
-                        Describe<
-                                std::remove_const_t<std::remove_pointer_t<T>>>(
+                        Describe
+                        <
+                            std::remove_const_t<std::remove_pointer_t<T>>
+                        >(
                             *(this->object_),
                             (this->indent_ < 0) ? -1 : this->indent_ + 1)
                                 .Style(this->style_);
@@ -604,8 +606,10 @@ public:
                 if (this->object_)
                 {
                     outputStream <<
-                        Describe<ValueType>(*(this->object_), this->indent_)
-                            .Style(this->style_);
+                        Describe<ValueType>(
+                            *(this->object_),
+                            (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                                .Style(this->style_);
                 }
                 else
                 {
