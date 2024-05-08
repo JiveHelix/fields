@@ -141,10 +141,13 @@ template<typename T, typename = void>
 struct HasDescribe_: std::false_type {};
 
 template<typename T>
-struct HasDescribe_<
+struct HasDescribe_
+<
     T,
-    std::enable_if_t<
-        std::is_same_v<
+    std::enable_if_t
+    <
+        std::is_same_v
+        <
             std::ostream &,
             decltype(
                 std::declval<T>().Describe(
