@@ -138,6 +138,16 @@ template<typename T>
 inline constexpr bool ImplementsDefault = ImplementsDefault_<T>::value;
 
 
+template<typename T>
+struct IsOptional_: std::false_type {};
+
+template<typename T>
+struct IsOptional_<std::optional<T>>: std::true_type {};
+
+template<typename T>
+inline constexpr bool IsOptional = IsOptional_<T>::value;
+
+
 template<std::size_t Index, typename Fields>
 using FieldElementType = typename std::tuple_element_t<Index, Fields>::Type;
 
@@ -302,6 +312,15 @@ Json Unstructure(const T &structured)
     {
         return structured.to_ullong();
     }
+    else if constexpr (IsOptional<T>)
+    {
+        if (structured)
+        {
+            return Unstructure<Json>(*structured);
+        }
+
+        return {};
+    }
     else if constexpr (!std::is_empty_v<T>)
     {
         // All other members must be implicitly convertible to
@@ -454,6 +473,15 @@ void StructureFromFields(T &result, const Json &unstructured)
         for (auto &value: unstructured)
         {
             result.push_back(Structure<typename T::value_type>(value));
+        }
+    }
+    else if constexpr (IsOptional<T>)
+    {
+        using ValueType = typename T::value_type;
+
+        if (!unstructured.is_null())
+        {
+            result = Structure<ValueType>(unstructured);
         }
     }
     else

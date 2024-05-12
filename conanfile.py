@@ -51,6 +51,7 @@ class FieldsConan(ConanFile):
 
     def build_requirements(self):
         self.test_requires("catch2/2.13.8")
+        self.test_requires("nlohmann_json/[~3.11]")
         self.build_requires("nlohmann_json/[~3.11]")
 
     def requirements(self):

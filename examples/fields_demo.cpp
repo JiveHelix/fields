@@ -222,7 +222,7 @@ struct AlteredColors: public fields::DefaultColors
 template<typename T>
 auto DescribeAltered(const T &object, int indent = -1)
 {
-    return fields::DescribeColorized<T, AlteredColors>(object, indent);
+    return fields::Describe<T, AlteredColors>(object, indent);
 }
 
 template<typename T>
@@ -315,14 +315,14 @@ int main()
               << "\nrecovered == original: " << (recovered == original)
               << std::endl;
 
-    std::cout << "\nDescribeColorized without indent argument "
+    std::cout << "\nDescribe without indent argument "
               << "(prints on one line):"
               << std::endl;
 
-    std::cout << fields::DescribeColorized(recovered) << std::endl;
+    std::cout << fields::Describe(recovered) << std::endl;
 
-    std::cout << "\nDescribeColorized (no type information):" << std::endl;
-    std::cout << fields::DescribeColorized(recovered, 0) << std::endl;
+    std::cout << "\nDescribe (no type information):" << std::endl;
+    std::cout << fields::Describe(recovered, 0) << std::endl;
 
     std::cout << "\nChange the structure color to magenta:" << std::endl;
     std::cout << DescribeAltered(recovered, 0) << std::endl;
@@ -331,10 +331,10 @@ int main()
     std::cout << DescribeAlteredVerbose(recovered, 0) << std::endl;
 
     Rocket rocket{Python::gilliam, 1, 2, {}};
-    std::cout << fields::DescribeColorized(rocket) << std::endl;
+    std::cout << fields::Describe(rocket) << std::endl;
 
     rocket.z = 42.0;
-    std::cout << fields::DescribeColorized(rocket) << std::endl;
+    std::cout << fields::Describe(rocket) << std::endl;
 
     return 0;
 }

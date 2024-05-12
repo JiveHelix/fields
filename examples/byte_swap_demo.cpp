@@ -64,17 +64,17 @@ int main()
     std::cout << std::hex;
 
     std::cout << "Host byte order:"
-        << fields::DescribeColorized(values, 1) << std::endl;
+        << fields::Describe(values, 1) << std::endl;
 
     fields::HostToNetwork(values);
 
     std::cout << "Network byte order:"
-        << fields::DescribeColorized(values, 1) << std::endl;
+        << fields::Describe(values, 1) << std::endl;
 
     fields::NetworkToHost(values);
 
     std::cout << "Host byte order:"
-        << fields::DescribeColorized(values, 1) << std::endl;
+        << fields::Describe(values, 1) << std::endl;
 
     return 0;
 }

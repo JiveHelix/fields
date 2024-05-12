@@ -36,14 +36,6 @@ struct DescribeType<T, std::enable_if_t<fields::HasFieldsTypeName<T>>>
 namespace fields
 {
 
-template<typename T>
-struct IsOptional_: std::false_type {};
-
-template<typename T>
-struct IsOptional_<std::optional<T>>: std::true_type {};
-
-template<typename T>
-inline constexpr bool IsOptional = IsOptional_<T>::value;
 
 struct DefaultColors
 {
@@ -210,7 +202,7 @@ inline constexpr bool CanDescribe = CanDescribe_<T>::value;
 
 template<
     typename T,
-    typename Colors = NoColor,
+    typename Colors = DefaultColors,
     typename VerboseTypes = std::false_type>
 class Describe;
 
