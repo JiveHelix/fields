@@ -44,7 +44,7 @@ namespace detail
     > : std::true_type {};
 
     template<ssize_t precision, typename T>
-    bool Equal(const T& value, const T& other)
+    bool DoEqual(const T &value, const T &other)
     {
         if constexpr (fields::HasFields<T>)
         {
@@ -73,6 +73,29 @@ namespace detail
             {
                 return value == other;
             }
+        }
+    }
+
+    template<ssize_t precision, typename T>
+    bool Equal(const T &value, const T &other)
+    {
+        if constexpr (IsOptional<T>)
+        {
+            if (!value && !other)
+            {
+                return true;
+            }
+
+            if (value.has_value() != other.has_value())
+            {
+                return false;
+            }
+
+            return DoEqual<precision>(*value, *other);
+        }
+        else
+        {
+            return DoEqual<precision>(value, other);
         }
     }
 

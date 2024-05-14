@@ -21,6 +21,10 @@ struct ImplicitPrecision
 };
 
 
+DECLARE_EQUALITY_OPERATORS(ImplicitPrecision)
+DECLARE_OUTPUT_STREAM_OPERATOR(ImplicitPrecision)
+
+
 struct CompareMe
 {
     float x;
@@ -37,6 +41,8 @@ struct CompareMe
         fields::Field(&CompareMe::foo, "foo"));
 };
 
+DECLARE_OUTPUT_STREAM_OPERATOR(CompareMe)
+
 
 TEST_CASE("Compare almost equal", "[compare]")
 {
@@ -47,6 +53,67 @@ TEST_CASE("Compare almost equal", "[compare]")
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
 
     right.z = 40.001;
+
+    REQUIRE(
+        fields::ComparisonTuple(left) == fields::ComparisonTuple(right));
+
+    right.foo.b = 1.001;
+
+    REQUIRE(
+        fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
+}
+
+
+struct CompareWithOptional
+{
+    float x;
+    float y;
+    float z;
+    std::optional<ImplicitPrecision> foo;
+
+    static constexpr ssize_t precision = 4;
+
+    static constexpr auto fields = std::make_tuple(
+        fields::Field(&CompareWithOptional::x, "x"),
+        fields::Field(&CompareWithOptional::y, "y"),
+        fields::Field(&CompareWithOptional::z, "z"),
+        fields::Field(&CompareWithOptional::foo, "foo"));
+};
+
+
+DECLARE_EQUALITY_OPERATORS(CompareWithOptional)
+DECLARE_OUTPUT_STREAM_OPERATOR(CompareWithOptional)
+
+
+TEST_CASE("Compare almost equal with optional", "[compare]")
+{
+    auto left =
+        CompareWithOptional{2.0f, 3.0f, 40.0f, ImplicitPrecision{1.0, 1.0}};
+
+    auto right =
+        CompareWithOptional{2.0f, 3.0f, 40.01, ImplicitPrecision{1.0, 1.0001}};
+
+    REQUIRE(
+        fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
+
+    right.z = 40.001;
+
+    if (left != right)
+    {
+        std::cout << fields::Describe(left, 1) << std::endl;
+        std::cout << fields::Describe(right, 1) << std::endl;
+    }
+
+    REQUIRE(
+        fields::ComparisonTuple(left) == fields::ComparisonTuple(right));
+
+    right.foo->b = 1.001;
+
+    REQUIRE(
+        fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
+
+    left.foo = {};
+    right.foo = {};
 
     REQUIRE(
         fields::ComparisonTuple(left) == fields::ComparisonTuple(right));
