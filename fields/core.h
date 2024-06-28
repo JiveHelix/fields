@@ -429,8 +429,10 @@ void InitializeInPlace(T &result)
 
 
 template<typename T, typename Json>
-void StructureFromFields(T &result, const Json &unstructured)
+T StructureFromFields(const Json &unstructured)
 {
+    T result;
+
     if constexpr (HasFields<T>)
     {
         // Iterate over fields of T to construct members
@@ -501,6 +503,14 @@ void StructureFromFields(T &result, const Json &unstructured)
             result = unstructured;
         }
     }
+
+    if constexpr (ImplementsAfterFields<T>)
+    {
+        // Allow T to do any additional initialization.
+        result.AfterFields();
+    }
+
+    return result;
 }
 
 
@@ -513,17 +523,7 @@ T Structure(const Json &unstructured)
     }
     else
     {
-        T result;
-
-        StructureFromFields(result, unstructured);
-
-        if constexpr (ImplementsAfterFields<T>)
-        {
-            // Allow T to do any additional initialization.
-            result.AfterFields();
-        }
-
-        return result;
+        return StructureFromFields<T>(unstructured);
     }
 }
 
