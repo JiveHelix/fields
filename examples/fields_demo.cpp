@@ -259,7 +259,7 @@ struct Rocket
 
 
 using OptionalZ = std::optional<double>;
-static_assert(fields::IsOptional<OptionalZ>);
+static_assert(jive::IsOptional<OptionalZ>);
 
 
 int main()

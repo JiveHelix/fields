@@ -14,10 +14,12 @@
 #include <ostream>
 #include <sstream>
 #include <cassert>
+#include <jive/describe_type.h>
+#include <jive/colorize.h>
+#include <jive/type_traits.h>
+#include <jive/optional.h>
+
 #include "fields/core.h"
-#include "jive/describe_type.h"
-#include "jive/colorize.h"
-#include "jive/type_traits.h"
 
 
 namespace jive
@@ -594,7 +596,7 @@ public:
                                 .Style(this->style_);
                 }
             }
-            else if constexpr (IsOptional<T>)
+            else if constexpr (jive::IsOptional<T>)
             {
                 using ValueType = typename T::value_type;
 

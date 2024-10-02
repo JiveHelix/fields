@@ -12,10 +12,11 @@
 #pragma once
 
 #include <tuple>
-#include "fields/core.h"
 #include <jive/comparison_operators.h>
 #include <jive/equal.h>
 #include <jive/begin.h>
+#include <jive/optional.h>
+#include "fields/core.h"
 
 
 namespace fields
@@ -79,7 +80,7 @@ namespace detail
     template<ssize_t precision, typename T>
     bool Equal(const T &value, const T &other)
     {
-        if constexpr (IsOptional<T>)
+        if constexpr (jive::IsOptional<T>)
         {
             if (!value && !other)
             {

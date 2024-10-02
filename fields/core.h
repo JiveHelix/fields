@@ -10,13 +10,12 @@
   */
 #pragma once
 
-#include <type_traits>
-#include <optional>
 #include <string>
 #include <map>
 #include <vector>
-#include "jive/for_each.h"
-#include "jive/type_traits.h"
+#include <jive/for_each.h>
+#include <jive/optional.h>
+#include <jive/type_traits.h>
 
 
 namespace fields
@@ -26,6 +25,15 @@ template<typename Class, typename T, typename... OtherNames>
 struct Field
 {
     using Type = T;
+
+    constexpr Field()
+        :
+        member{nullptr},
+        name{nullptr},
+        otherNames{}
+    {
+
+    }
 
     constexpr Field(
         T Class::*inMember,
@@ -136,16 +144,6 @@ struct ImplementsDefault_<
 
 template<typename T>
 inline constexpr bool ImplementsDefault = ImplementsDefault_<T>::value;
-
-
-template<typename T>
-struct IsOptional_: std::false_type {};
-
-template<typename T>
-struct IsOptional_<std::optional<T>>: std::true_type {};
-
-template<typename T>
-inline constexpr bool IsOptional = IsOptional_<T>::value;
 
 
 template<std::size_t Index, typename Fields>
@@ -312,7 +310,7 @@ Json Unstructure(const T &structured)
     {
         return structured.to_ullong();
     }
-    else if constexpr (IsOptional<T>)
+    else if constexpr (jive::IsOptional<T>)
     {
         if (structured)
         {
@@ -477,7 +475,7 @@ T StructureFromFields(const Json &unstructured)
             result.push_back(Structure<typename T::value_type>(value));
         }
     }
-    else if constexpr (IsOptional<T>)
+    else if constexpr (jive::IsOptional<T>)
     {
         using ValueType = typename T::value_type;
 
