@@ -133,19 +133,6 @@ inline constexpr bool ImplementsUnstructure =
     ImplementsUnstructure_<T, Json>::value;
 
 
-template<typename T, typename = void>
-struct ImplementsDefault_: std::false_type {};
-
-template<typename T>
-struct ImplementsDefault_<
-    T,
-    std::void_t<decltype(T::GetDefault())>
-> : std::true_type {};
-
-template<typename T>
-inline constexpr bool ImplementsDefault = ImplementsDefault_<T>::value;
-
-
 template<std::size_t Index, typename Fields>
 using FieldElementType = typename std::tuple_element_t<Index, Fields>::Type;
 
@@ -368,20 +355,6 @@ const Json * FindMember(const Field &field, const Json &unstructured)
 }
 
 
-template<typename T>
-T Default()
-{
-    if constexpr (ImplementsDefault<T>)
-    {
-        return T::GetDefault();
-    }
-    else
-    {
-        return {};
-    }
-}
-
-
 template<typename T, typename Json>
 T Structure(const Json &unstructured);
 
@@ -407,29 +380,10 @@ void StructureInPlace(T &result, const Json &unstructured)
 }
 
 
-template<typename T>
-void InitializeInPlace(T &result)
-{
-    if constexpr (std::is_array_v<T>)
-    {
-        static constexpr auto size = std::extent_v<T>;
-
-        for (size_t i = 0; i < size; ++i)
-        {
-            InitializeInPlace(result[i]);
-        }
-    }
-    else
-    {
-        result = Default<T>();
-    }
-}
-
-
 template<typename T, typename Json>
 T StructureFromFields(const Json &unstructured)
 {
-    T result;
+    T result{};
 
     if constexpr (HasFields<T>)
     {
@@ -448,11 +402,6 @@ T StructureFromFields(const Json &unstructured)
                     StructureInPlace(
                         result.*(field.member),
                         *unstructuredMember);
-                }
-                else
-                {
-                    // Initialize missing field to its default value
-                    InitializeInPlace(result.*(field.member));
                 }
             });
     }
@@ -526,62 +475,9 @@ T Structure(const Json &unstructured)
 }
 
 
-/**
- * If the key exists, the structured value will be returned, otherwise
- * getDefault will be called to create the default value.
- *
- * Using a callable for the default value so you only pay for default
- * initialization when it is needed.
- */
-template<typename T, typename Json, typename GetDefault>
-T Get(const Json &json, const std::string &key, GetDefault getDefault)
-{
-    static_assert(std::is_same_v<T, decltype(getDefault())>);
-
-    if (json.count(key) == 1)
-    {
-        return Structure<T>(json[key]);
-    }
-
-    return getDefault();
-}
-
-
 /***** Identity *****/
 template<typename T>
 using Identity = T;
-
-
-#define DECLARE_ADAPTERS(FieldsClass, Adapted)                       \
-    FieldsClass() = default;                                         \
-                                                                     \
-    FieldsClass(const Adapted &other)                                \
-    {                                                                \
-        this->operator=(other);                                      \
-    }                                                                \
-                                                                     \
-    Adapted Get() const                                              \
-    {                                                                \
-        static_assert(                                               \
-            !std::is_polymorphic_v<FieldsClass>,                     \
-            "Polymorphism breaks alignment of the 'this' pointer."); \
-                                                                     \
-        static_assert(sizeof(Adapted) == sizeof(FieldsClass));       \
-        Adapted result;                                              \
-        memcpy(&result, this, sizeof(Adapted));                      \
-        return result;                                               \
-    }                                                                \
-                                                                     \
-    FieldsClass &operator=(const Adapted &other)                     \
-    {                                                                \
-        static_assert(                                               \
-            !std::is_polymorphic_v<FieldsClass>,                     \
-            "Polymorphism breaks alignment of the 'this' pointer."); \
-                                                                     \
-        static_assert(sizeof(Adapted) == sizeof(FieldsClass));       \
-        memcpy(this, &other, sizeof(Adapted));                       \
-        return *this;                                                \
-    }
 
 
 } // end namespace fields

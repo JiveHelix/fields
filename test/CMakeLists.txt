@@ -7,7 +7,8 @@ add_executable(
     compare_tests.cpp
     fields_tests.cpp
     marshal_tests.cpp
-    byte_swap_tests.cpp)
+    byte_swap_tests.cpp
+    default_tests.cpp)
 
 target_link_libraries(
     fields_tests
