@@ -56,4 +56,27 @@ void Assign(Target &target, Source &source)
 }
 
 
+template
+<
+    template<typename> typename Fields,
+    typename Target,
+    typename Source
+>
+void MoveAssign(Target &target, Source &&source)
+{
+    auto initializer = [&target, &source](
+        const auto &targetField,
+        const auto &sourceField) -> void
+    {
+        target.*(targetField.member) =
+            std::move(source.*(sourceField.member));
+    };
+
+    jive::ZipApply(
+        initializer,
+        Fields<Target>::fields,
+        Fields<Source>::fields);
+}
+
+
 } // end namespace fields

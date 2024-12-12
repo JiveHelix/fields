@@ -64,7 +64,7 @@ struct HasFields_<T, std::void_t<decltype(T::fields)>
 > : std::true_type {};
 
 template<typename T>
-inline constexpr bool HasFields = HasFields_<T>::value;
+concept HasFields = HasFields_<T>::value;
 
 
 // Optionally, a class can name itself
