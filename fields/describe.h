@@ -195,6 +195,7 @@ struct CanDescribe_
         HasFields<T>
         || HasDescribe<T>
         || HasDoDescribe<T>
+        || jive::HasOutputStreamOperator<T>::value
     >
 >: std::true_type {};
 
@@ -289,7 +290,7 @@ std::ostream & operator<<(
 
 inline std::string MakeIndent(int indent)
 {
-    if (indent <= 0)
+    if (indent < 0)
     {
         return {};
     }
@@ -303,7 +304,13 @@ GNU_NO_RESTRICT_POP
 }
 
 
-template<typename Object, typename Fields, std::size_t... I>
+template
+<
+    typename Object,
+    typename Fields,
+    typename DecorateName,
+    std::size_t... I
+>
 std::ostream & DescribeFields(
     std::ostream &outputStream,
     const Object &object,
@@ -314,19 +321,35 @@ std::ostream & DescribeFields(
 {
     // Use a fold expression to print a comma between each member.
     // Don't print a comma before the first member.
-    ((outputStream << (I == 0 ? "" : ", ") <<
-        /* Recursively wrap each member in Describe */
-        Describe<FieldElementType<I, Fields>>(
-            object.*(std::get<I>(fields).member),
-            std::get<I>(fields).name,
-            (indent < 0) ? -1 : indent + 1)
-                .Style(style)),
-     ...);
+    (
+        (outputStream << (I == 0 ? "" : ", ") <<
+            /* Recursively wrap each member in Describe */
+            Describe<FieldElementType<I, Fields>>(
+                object.*(std::get<I>(fields).member),
+                DecorateName{}(std::get<I>(fields).name),
+                (indent < 0) ? -1 : indent + 1).Style(style)),
+    ...);
 
     return outputStream;
 }
 
-template<typename Object, typename Fields>
+
+struct DefaultNameDecorator
+{
+    template<typename T>
+    auto operator()(T value)
+    {
+        return value;
+    }
+};
+
+
+template
+<
+    typename Object,
+    typename Fields,
+    typename DecorateName = DefaultNameDecorator
+>
 std::ostream & DescribeFields(
     std::ostream &outputStream,
     const Object &object,
@@ -340,7 +363,7 @@ std::ostream & DescribeFields(
     colorize(style.colors.structure, jive::GetTypeName<Object>());
     outputStream << "(";
 
-    DescribeFields(
+    DescribeFields<Object, Fields, DecorateName>(
         outputStream,
         object,
         fields,
@@ -350,8 +373,6 @@ std::ostream & DescribeFields(
 
     return outputStream << ")";
 }
-
-
 
 
 
@@ -527,7 +548,7 @@ public:
             this->object_.Describe(
                 outputStream,
                 this->style_,
-                (this->indent_ < 0) ? -1 : this->indent_ + 1);
+                this->indent_);
         }
         else if constexpr (HasDoDescribe<T>)
         {
@@ -535,7 +556,7 @@ public:
                 outputStream,
                 this->object_,
                 this->style_,
-                (this->indent_ < 0) ? -1 : this->indent_ + 1);
+                this->indent_);
         }
         else if constexpr (HasFields<T>)
         {

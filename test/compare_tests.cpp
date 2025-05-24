@@ -46,18 +46,18 @@ DECLARE_OUTPUT_STREAM_OPERATOR(CompareMe)
 
 TEST_CASE("Compare almost equal", "[compare]")
 {
-    auto left = CompareMe{2.0f, 3.0f, 40.0f, {1.0, 1.0}};
-    auto right = CompareMe{2.0f, 3.0f, 40.01, {1.0, 1.0001}};
+    auto left = CompareMe{2.0f, 3.0f, 40.0f, {1.0f, 1.0f}};
+    auto right = CompareMe{2.0f, 3.0f, 40.01f, {1.0f, 1.0001f}};
 
     REQUIRE(
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
 
-    right.z = 40.001;
+    right.z = 40.001f;
 
     REQUIRE(
         fields::ComparisonTuple(left) == fields::ComparisonTuple(right));
 
-    right.foo.b = 1.001;
+    right.foo.b = 1.001f;
 
     REQUIRE(
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
@@ -88,15 +88,19 @@ DECLARE_OUTPUT_STREAM_OPERATOR(CompareWithOptional)
 TEST_CASE("Compare almost equal with optional", "[compare]")
 {
     auto left =
-        CompareWithOptional{2.0f, 3.0f, 40.0f, ImplicitPrecision{1.0, 1.0}};
+        CompareWithOptional{2.0f, 3.0f, 40.0f, ImplicitPrecision{1.0f, 1.0f}};
 
     auto right =
-        CompareWithOptional{2.0f, 3.0f, 40.01, ImplicitPrecision{1.0, 1.0001}};
+        CompareWithOptional{
+            2.0f,
+            3.0f,
+            40.01f,
+            ImplicitPrecision{1.0f, 1.0001f}};
 
     REQUIRE(
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
 
-    right.z = 40.001;
+    right.z = 40.001f;
 
     if (left != right)
     {
@@ -107,7 +111,7 @@ TEST_CASE("Compare almost equal with optional", "[compare]")
     REQUIRE(
         fields::ComparisonTuple(left) == fields::ComparisonTuple(right));
 
-    right.foo->b = 1.001;
+    right.foo->b = 1.001f;
 
     REQUIRE(
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
@@ -155,18 +159,18 @@ struct CompareMeToo
 
 TEST_CASE("Compare explicit precision", "[compare]")
 {
-    auto left = CompareMeToo{2.0f, 3.0f, 40.0f, {1.0, 1.0}};
-    auto right = CompareMeToo{2.0f, 3.0f, 40.01, {1.0, 1.0001}};
+    auto left = CompareMeToo{2.0f, 3.0f, 40.0f, {1.0f, 1.0f}};
+    auto right = CompareMeToo{2.0f, 3.0f, 40.01f, {1.0f, 1.0001f}};
 
     REQUIRE(
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
 
-    right.z = 40.001;
+    right.z = 40.001f;
 
     REQUIRE(
         fields::ComparisonTuple(left) != fields::ComparisonTuple(right));
 
-    right.foo.b = 1.000001;
+    right.foo.b = 1.000001f;
 
     REQUIRE(
         fields::ComparisonTuple(left) == fields::ComparisonTuple(right));

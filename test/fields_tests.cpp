@@ -83,7 +83,7 @@ TEST_CASE("Unstructure/Structure with optional member", "[fields]")
 
 TEST_CASE("Unstructure/Structure with optional unset fields member", "[fields]")
 {
-    Bar bar{3.14, 2.718, {}};
+    Bar bar{3.14f, 2.718f, {}};
 
     REQUIRE(!bar.foo);
 
@@ -101,7 +101,7 @@ TEST_CASE("Unstructure/Structure with optional unset fields member", "[fields]")
 
 TEST_CASE("Unstructure/Structure with optional set fields member", "[fields]")
 {
-    Bar bar{3.14, 2.718, Foo{42, {}, 7}};
+    Bar bar{3.14f, 2.718f, Foo{42, {}, 7}};
     REQUIRE(bar.foo);
 
     FIELDS_TEST_LOG(fields::Describe(bar));

@@ -57,7 +57,7 @@ TEST_CASE("Fields byte swap", "[swap]")
 
     REQUIRE(testData.a == 0x12);
     REQUIRE(testData.b == 0x3412);
-    REQUIRE(testData.c == 0xCDAB3412);
+    REQUIRE(static_cast<unsigned int>(testData.c) == 0xCDAB3412);
     REQUIRE(testData.d == 0x2143BADCCDAB3412);
     REQUIRE(testData.e == 0x12);
     REQUIRE(testData.f[0] == 0x3412);
@@ -102,8 +102,8 @@ TEST_CASE("Only networkMembers are swapped", "[swap]")
     // 'a' should remain unswapped.
     REQUIRE(networkData.a == 0x1234);
 
-    REQUIRE(networkData.b == 0xCDAB3412);
-    REQUIRE(networkData.c == 0x2143BADCCDAB3412);
+    REQUIRE(networkData.b == int32_t(0xCDAB3412));
+    REQUIRE(networkData.c == int64_t(0x2143BADCCDAB3412));
 }
 
 

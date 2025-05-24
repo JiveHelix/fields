@@ -1,9 +1,11 @@
 add_library(fields INTERFACE)
 
+find_package(Jive REQUIRED)
+
 # Projects that use this project must #include "fields/<header-name>"
 target_include_directories(fields INTERFACE ${PROJECT_SOURCE_DIR})
 
-target_link_libraries(fields INTERFACE CONAN_PKG::jive)
+target_link_libraries(fields INTERFACE jive::jive)
 
 target_sources(
     fields

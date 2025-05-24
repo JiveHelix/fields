@@ -1,3 +1,4 @@
+find_package(Nlohmann_json REQUIRED)
 add_executable(fields_demo fields_demo.cpp)
 add_executable(precision_demo precision_demo.cpp)
 add_executable(byte_swap_demo byte_swap_demo.cpp)
@@ -8,7 +9,7 @@ target_link_libraries(
     project_warnings
     project_options
     fields
-    CONAN_PKG::nlohmann_json)
+    nlohmann_json::nlohmann_json)
 
 target_link_libraries(
     precision_demo

@@ -1,15 +1,9 @@
-from conans import ConanFile, CMake
+from cmake_includes.conan import HeaderConanFile
 
 
-class FieldsConan(ConanFile):
+class FieldsConan(HeaderConanFile):
     name = "fields"
-    version = "1.3.7"
-
-    scm = {
-        "type": "git",
-        "url": "https://github.com/JiveHelix/fields.git",
-        "revision": "auto",
-        "submodule": "recursive"}
+    version = "1.4.0"
 
     # Optional metadata
     license = "MIT"
@@ -18,36 +12,7 @@ class FieldsConan(ConanFile):
     description = "Automatic conversion to structured and unstructured data."
     topics = ("C++", "Serialization")
 
-    # Binary configuration
-    settings = "os", "compiler", "build_type", "arch"
-
-    generators = "cmake"
-
-    options = {
-        "CMAKE_TRY_COMPILE_TARGET_TYPE":
-            ["EXECUTABLE", "STATIC_LIBRARY", None]}
-
-    default_options = {
-        "CMAKE_TRY_COMPILE_TARGET_TYPE": None}
-
     no_copy_source = True
-
-    def build(self):
-        cmake = CMake(self)
-
-        if (self.options.CMAKE_TRY_COMPILE_TARGET_TYPE):
-            cmake.definitions["CMAKE_TRY_COMPILE_TARGET_TYPE"] = \
-                self.options.CMAKE_TRY_COMPILE_TARGET_TYPE
-
-        cmake.configure()
-        cmake.build()
-
-    def package(self):
-        cmake = CMake(self)
-        cmake.install()
-
-    def package_id(self):
-        self.info.header_only()
 
     def build_requirements(self):
         self.test_requires("catch2/2.13.8")
@@ -55,4 +20,4 @@ class FieldsConan(ConanFile):
         self.build_requires("nlohmann_json/[~3.11]")
 
     def requirements(self):
-        self.requires("jive/[>=1.2.3 < 1.3]")
+        self.requires("jive/[~1.3]", transitive_headers=True)
