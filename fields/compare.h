@@ -17,17 +17,23 @@
 #include <jive/begin.h>
 #include <jive/optional.h>
 #include "fields/core.h"
+#include "fields/reflect.h"
 
 
 namespace fields
 {
 
-template<ssize_t precision, typename T>
+template<ssize_t precision, HasFields T>
+constexpr auto PrecisionCompare(const T &value);
+
+template<ssize_t precision, CanReflect T>
 constexpr auto PrecisionCompare(const T &value);
 
 
 namespace detail
 {
+
+
     template<typename, typename = void>
     struct HasPrecision: std::false_type {};
 
@@ -274,10 +280,44 @@ namespace detail
             }
         }
     }
+
+    // Build up a list of indices to fields that participate in comparisons.
+    template<typename T, typename Reflection, size_t Count, size_t... Is>
+    constexpr auto SelectMembers(const T &object)
+    {
+        if constexpr (Count == 0)
+        {
+            return std::index_sequence<Is...>();
+        }
+        else
+        {
+            using MemberType = typename Reflection::template Element<Count - 1>;
+
+            if constexpr (std::is_empty_v<MemberType>)
+            {
+                // Empty types do not participate in comparisons.
+                // Skip this field.
+                return SelectMembers<T, Reflection, Count - 1, Is...>(object);
+            }
+            else
+            {
+                // Add this index to the members that will be selected.
+                return SelectMembers
+                    <
+                        T,
+                        Reflection,
+                        Count - 1,
+                        Count - 1,
+                        Is...>(object);
+            }
+        }
+    }
+
+
 } // end namespace detail
 
 
-template<ssize_t precision, typename T, std::size_t... I>
+template<ssize_t precision, HasFields T, std::size_t... I>
 constexpr auto ComparisonTuple(
         const T &object,
         std::index_sequence<I...>)
@@ -287,13 +327,20 @@ constexpr auto ComparisonTuple(
             object.*(std::get<I>(T::fields).member))...);
 }
 
-template<typename T>
+
+template<ssize_t precision, CanReflect T, std::size_t... I>
+constexpr auto ComparisonTuple(
+        const T &object,
+        std::index_sequence<I...>)
+{
+    return std::make_tuple(
+        detail::MakeCompare<precision>(GetMember<I>(object))...);
+}
+
+
+template<HasFields T>
 constexpr auto ComparisonTuple(const T &object)
 {
-    static_assert(
-        fields::HasFields<T>,
-        "Missing required fields tuple");
-
     using Fields = decltype(T::fields);
 
     constexpr auto propertyCount = std::tuple_size<Fields>::value;
@@ -303,13 +350,9 @@ constexpr auto ComparisonTuple(const T &object)
         detail::SelectFields<T, Fields, propertyCount>(object, T::fields));
 }
 
-template<ssize_t precision, typename T>
+template<ssize_t precision, HasFields T>
 constexpr auto PrecisionCompare(const T &value)
 {
-    static_assert(
-        fields::HasFields<T>,
-        "Missing required fields tuple");
-
     using Fields = decltype(T::fields);
 
     constexpr auto propertyCount = std::tuple_size<Fields>::value;
@@ -317,6 +360,26 @@ constexpr auto PrecisionCompare(const T &value)
     return ComparisonTuple<precision>(
         value,
         detail::SelectFields<T, Fields, propertyCount>(value, T::fields));
+}
+
+template<CanReflect T>
+constexpr auto ComparisonTuple(const T &object)
+{
+    using Reflection = Reflect<T>;
+
+    return ComparisonTuple<detail::Precision<T>::value>(
+        object,
+        detail::SelectMembers<T, Reflection, Reflection::count>(object));
+}
+
+template<ssize_t precision, CanReflect T>
+constexpr auto PrecisionCompare(const T &object)
+{
+    using Reflection = Reflect<T>;
+
+    return ComparisonTuple<precision>(
+        object,
+        detail::SelectMembers<T, Reflection, Reflection::count>(object));
 }
 
 

@@ -20,6 +20,7 @@
 #include <jive/optional.h>
 
 #include "fields/core.h"
+#include "fields/reflect.h"
 
 
 namespace jive
@@ -182,25 +183,13 @@ template<typename T>
 inline constexpr bool HasDoDescribe = HasDoDescribe_<T>::value;
 
 
-template<typename T, typename = void>
-struct CanDescribe_: std::false_type {};
-
-
 template<typename T>
-struct CanDescribe_
-<
-    T,
-    std::enable_if_t
-    <
-        HasFields<T>
-        || HasDescribe<T>
-        || HasDoDescribe<T>
-        || jive::HasOutputStreamOperator<T>::value
-    >
->: std::true_type {};
-
-template<typename T>
-inline constexpr bool CanDescribe = CanDescribe_<T>::value;
+concept CanDescribe =
+    CanReflect<T>
+    || HasFields<T>
+    || HasDescribe<T>
+    || HasDoDescribe<T>
+    || jive::HasOutputStreamOperator<T>::value;
 
 
 template<
@@ -375,12 +364,80 @@ std::ostream & DescribeFields(
 }
 
 
+template
+<
+    CanReflect Object,
+    typename Reflection,
+    typename DecorateName,
+    std::size_t... I
+>
+std::ostream & DescribeReflected(
+    std::ostream &outputStream,
+    const Object &object,
+    const Style &style,
+    int indent,
+    std::index_sequence<I...>)
+{
+    // Use a fold expression to print a comma between each member.
+    // Don't print a comma before the first member.
+    (
+        (outputStream << (I == 0 ? "" : ", ") <<
+            /* Recursively wrap each member in Describe */
+            Describe<typename Reflection::template Element<I>>(
+                GetMember<I>(object),
+                DecorateName{}(std::get<I>(Reflection::names)),
+                (indent < 0) ? -1 : indent + 1).Style(style)),
+    ...);
+
+    return outputStream;
+}
+
+
+template
+<
+    CanReflect Object,
+    typename DecorateName = DefaultNameDecorator
+>
+std::ostream & DescribeReflected(
+    std::ostream &outputStream,
+    const Object &object,
+    const Style &style,
+    int indent)
+{
+    using Reflection = Reflect<Object>;
+
+    jive::Colorize colorize(outputStream);
+    colorize(style.colors.structure, jive::GetTypeName<Object>());
+    outputStream << "(";
+
+    DescribeReflected<Object, Reflection, DecorateName>(
+        outputStream,
+        object,
+        style,
+        indent,
+        std::make_index_sequence<Reflection::count>{});
+
+    return outputStream << ")";
+}
+
 
 template<typename T, typename ColorsType, typename VerboseTypes>
 class Describe
 {
 public:
+#if 0
     Describe(const T &object, const std::string &name, int indent = -1)
+        :
+        object_{object},
+        name_{name},
+        indent_{indent},
+        style_(Colors::Create<ColorsType>(), VerboseTypes::value)
+    {
+
+    }
+#endif
+
+    Describe(const T &object, std::string_view name, int indent = -1)
         :
         object_{object},
         name_{name},
@@ -567,6 +624,14 @@ public:
                 this->style_,
                 this->indent_);
         }
+        else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+        {
+            DescribeReflected(
+                outputStream,
+                this->object_,
+                this->style_,
+                this->indent_);
+        }
         else
         {
             // There are no fields classes, so get a string representation of
@@ -595,7 +660,9 @@ public:
             {
                 this->DescribeMap(outputStream, this->object_);
             }
-            else if constexpr (jive::IsValueContainer<T>::value)
+            else if constexpr (
+                    jive::IsValueContainer<T>::value
+                    || jive::IsArray<T>)
             {
                 this->DescribeContainer(outputStream, this->object_);
             }

@@ -16,6 +16,8 @@
 #include <jive/for_each.h>
 #include <jive/optional.h>
 #include <jive/type_traits.h>
+#include "fields/has_fields.h"
+#include "fields/reflect.h"
 
 
 namespace fields
@@ -51,32 +53,6 @@ struct Field
     const char* name;
     std::tuple<OtherNames...> otherNames;
 };
-
-
-// To meet the requirement of a class that implements Fields, a class must
-// define a static tuple of Fields describing the class members that will
-// participate.
-template<typename, typename = void>
-struct HasFields_: std::false_type {};
-
-template<typename T>
-struct HasFields_<T, std::void_t<decltype(T::fields)>
-> : std::true_type {};
-
-template<typename T>
-concept HasFields = HasFields_<T>::value;
-
-
-// Optionally, a class can name itself
-template<typename, typename = void>
-struct HasFieldsTypeName_: std::false_type {};
-
-template<typename T>
-struct HasFieldsTypeName_<T, std::void_t<decltype(T::fieldsTypeName)>
-> : std::true_type {};
-
-template<typename T>
-inline constexpr bool HasFieldsTypeName = HasFieldsTypeName_<T>::value;
 
 
 template<typename T, typename = void>
@@ -173,6 +149,36 @@ constexpr void ForEachField(F &&function)
 }
 
 
+template<size_t Index, typename T>
+    requires HasFields<std::remove_cvref_t<T>>
+decltype(auto) GetMember(T &&t)
+{
+    using U = std::remove_cvref_t<T>;
+    return t.*(std::get<Index>(U::fields).member);
+}
+
+
+template<typename T>
+struct MemberCount_;
+
+template<typename T>
+    requires HasFields<std::remove_cvref_t<T>>
+struct MemberCount_<T>
+{
+    static constexpr size_t value = std::tuple_size_v<decltype(T::fields)>;
+};
+
+template<typename T>
+    requires CanReflect<std::remove_cvref_t<T>>
+struct MemberCount_<T>
+{
+    static constexpr size_t value = GetMemberCount<T>();
+};
+
+template<typename T>
+inline constexpr size_t MemberCount = MemberCount_<T>::value;
+
+
 template<typename Json, typename T>
 Json Unstructure(const T &structured);
 
@@ -232,7 +238,7 @@ typename Dimensional<T>::type UnstructureArray(const T &structured)
 }
 
 
-template<typename Json, typename T>
+template<typename Json, HasFields T>
 Json UnstructureFromFields(const T &structured)
 {
     Json result;
@@ -258,6 +264,32 @@ Json UnstructureFromFields(const T &structured)
 }
 
 
+template<typename Json, CanReflect T>
+Json UnstructureFromReflection(const T &structured)
+{
+    Json result;
+
+    ForEach(
+        structured,
+        [&result](const auto &name, const auto &member)
+        {
+            using Type = decltype(member);
+
+            if constexpr (std::is_array_v<Type>)
+            {
+                auto asVector = UnstructureArray(member);
+                result[name] = Unstructure<Json>(asVector);
+            }
+            else if constexpr (!std::is_empty_v<Type>)
+            {
+                result[name] = Unstructure<Json>(member);
+            }
+        });
+
+    return result;
+}
+
+
 template<typename Json, typename T>
 Json Unstructure(const T &structured)
 {
@@ -268,6 +300,10 @@ Json Unstructure(const T &structured)
     else if constexpr (HasFields<T>)
     {
         return UnstructureFromFields<Json>(structured);
+    }
+    else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+    {
+        return UnstructureFromReflection<Json>(structured);
     }
     else if constexpr (jive::IsKeyValueContainer<T>::value)
     {
@@ -281,7 +317,7 @@ Json Unstructure(const T &structured)
 
         return result;
     }
-    else if constexpr (jive::IsValueContainer<T>::value)
+    else if constexpr (jive::IsValueContainer<T>::value || jive::IsArray<T>)
     {
         // Convert the iterable to a vector of unstructured values.
         std::vector<Json> result;
@@ -324,7 +360,7 @@ const Json * FindMember(const Field &field, const Json &unstructured)
 {
     if (1 == unstructured.count(field.name))
     {
-        // The canonical name for this field was found.
+        // The default name for this field was found.
         return &unstructured[field.name];
     }
 
@@ -381,7 +417,7 @@ void StructureInPlace(T &result, const Json &unstructured)
 
 
 template<typename T, typename Json>
-T StructureFromFields(const Json &unstructured)
+T Restructure(const Json &unstructured)
 {
     T result{};
 
@@ -405,6 +441,21 @@ T StructureFromFields(const Json &unstructured)
                 }
             });
     }
+    else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+    {
+        ForEach(
+            result,
+            [&unstructured](const auto &name, auto &member) -> void
+            {
+                if (1 == unstructured.count(name))
+                {
+                    // Reconstruct the object from the unstructured data.
+                    StructureInPlace(
+                        member,
+                        unstructured[name]);
+                }
+            });
+    }
     else if constexpr (jive::IsKeyValueContainer<T>::value)
     {
         // Convert the key value pairs to the map type.
@@ -422,6 +473,13 @@ T StructureFromFields(const Json &unstructured)
         for (auto &value: unstructured)
         {
             result.push_back(Structure<typename T::value_type>(value));
+        }
+    }
+    else if constexpr (jive::IsArray<T>)
+    {
+        for (size_t i = 0; i < unstructured.size(); ++i)
+        {
+            result[i] = Structure<typename T::value_type>(unstructured[i]);
         }
     }
     else if constexpr (jive::IsOptional<T>)
@@ -470,7 +528,7 @@ T Structure(const Json &unstructured)
     }
     else
     {
-        return StructureFromFields<T>(unstructured);
+        return Restructure<T>(unstructured);
     }
 }
 

@@ -16,7 +16,6 @@
 #include <iostream>
 #include <iomanip>
 
-
 #define USE_PRECISE_DIGITS
 #include "fields/core.h"
 
@@ -86,16 +85,7 @@ struct Groot
     long y;
     double z;
 
-#if 0
-    // Should use Reflection instead of explicit fields.
-    constexpr static auto fields = std::make_tuple(
-        fields::Field(&Groot::x, "x"),
-        fields::Field(&Groot::y, "y"),
-        fields::Field(&Groot::z, "z"));
-#endif
-
-    constexpr static auto fieldsTypeName = "Groot";
-
+    static constexpr auto fieldsTypeName = "Groot";
     static constexpr size_t precision = 3;
 };
 
@@ -108,80 +98,49 @@ struct Bar
     Groot first;
     Groot second;
     double velocity;
-
-    template<typename Json>
-    Json Unstructure() const
-    {
-        Json result;
-
-        // Use the default Unstructure for the first and second fields.
-        result["first"] = fields::Unstructure<Json>(this->first);
-        result["second"] = fields::Unstructure<Json>(this->second);
-
-        // Arbitrarily store velocity as its square root.
-        result["velocity"] = sqrt(this->velocity);
-
-        return result;
-    }
-
-    template<typename Json>
-    static Bar Structure(const Json &jsonValue)
-    {
-        Bar result;
-        auto first = FindMember(std::get<0>(fields), jsonValue);
-
-        if (first)
-        {
-            result.first = fields::Structure<Groot>(*first);
-        }
-        else
-        {
-            result.first = Groot{};
-        }
-
-        result.second = fields::Structure<Groot>(jsonValue.at("second"));
-        double squareRoot = jsonValue.at("velocity").template get<double>();
-        result.velocity = squareRoot * squareRoot;
-        return result;
-    }
-
-    constexpr static auto fields = std::make_tuple(
-        fields::Field(&Bar::first, "first", "primeiro", "primis"),
-        fields::Field(&Bar::second, "second", "segundo"),
-        fields::Field(&Bar::velocity, "velocity"));
-
-    constexpr static auto fieldsTypeName = "Bar";
+    static constexpr auto fieldsTypeName = "Bar";
 };
 
 
 DECLARE_OUTPUT_STREAM_OPERATOR(Bar)
 
+template<typename T, size_t... Ns>
+struct MultiArray_;
+
+
+template<typename T, size_t N>
+struct MultiArray_<T, N>
+{
+    using type = std::array<T, N>;
+};
+
+
+template<typename T, size_t N, size_t... Ds>
+struct MultiArray_<T, N, Ds...>
+{
+    using Inner = typename MultiArray_<T, Ds...>::type;
+    using type = std::array<Inner, N>;
+};
+
+
+template<typename T, size_t ...Ds>
+using MultiArray = typename MultiArray_<T, Ds...>::type;
+
 
 struct Wobble
 {
-    uint8_t alpha[2][4];
+    MultiArray<uint8_t, 2, 4> alpha;
     Bar frob;
-    Groot flub[2][2];
+    MultiArray<Groot, 2, 2> flub;
     std::string message;
     std::vector<Groot> numbers;
     std::map<std::string, Groot> fooByName;
-
-    void AfterFields()
-    {
-        std::cout << "Wobble has AfterFields, but it doesn't do anything."
-            << std::endl;
-    }
-
-    constexpr static auto fields = std::make_tuple(
-        fields::Field(&Wobble::alpha, "alpha"),
-        fields::Field(&Wobble::frob, "any name you want"),
-        fields::Field(&Wobble::flub, "flub"),
-        fields::Field(&Wobble::message, "message"),
-        fields::Field(&Wobble::numbers, "numbers"),
-        fields::Field(&Wobble::fooByName, "fooByName"));
-
-    constexpr static auto fieldsTypeName = "Wobble";
+    static constexpr auto fieldsTypeName = "Wobble";
 };
+
+
+static_assert(fields::GetMemberCount<Wobble>() == 6);
+static_assert(std::is_same_v<decltype(Wobble::alpha), std::array<std::array<uint8_t, 4>, 2>>);
 
 
 DECLARE_OUTPUT_STREAM_OPERATOR(Wobble)
@@ -227,13 +186,7 @@ struct Rocket
     long y;
     std::optional<double> z;
 
-    constexpr static auto fields = std::make_tuple(
-        fields::Field(&Rocket::python, "python"),
-        fields::Field(&Rocket::x, "x"),
-        fields::Field(&Rocket::y, "y"),
-        fields::Field(&Rocket::z, "z"));
-
-    constexpr static auto fieldsTypeName = "Rocket";
+    static constexpr auto fieldsTypeName = "Rocket";
     static constexpr size_t precision = 3;
 };
 
@@ -245,11 +198,16 @@ static_assert(jive::IsOptional<OptionalZ>);
 int main()
 {
     Wobble original{
-        {{'x', 'v', 'u', 't'}, {'s', 'r', 'q', 'p'}},
+        {{{{'x', 'v', 'u', 't'}}, {{'s', 'r', 'q', 'p'}}}},
         {{13, 42000, 56.0}, {-19000, 15, 3.14}, 9.80},
-        {
-            {{56, 88, 3.1415926}, {57, 89, 4.1415926}},
-            {{58, 90, 5.1415926}, {59, 60, 6.1415926}}},
+        {{
+            {{
+                 {56, 88, 3.1415926}, {57, 89, 4.1415926}
+            }},
+            {{
+                 {58, 90, 5.1415926}, {59, 60, 6.1415926}
+            }}
+        }},
         "This is my message",
         {{0, 1, 2}, {117, -67, 13e-9}, {117 * 2, -67 * 2, 13e-9 * 2}},
         {}};
