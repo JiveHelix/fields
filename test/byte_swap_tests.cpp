@@ -103,7 +103,7 @@ TEST_CASE("Only networkMembers are swapped", "[swap]")
     REQUIRE(networkData.a == 0x1234);
 
     REQUIRE(networkData.b == int32_t(0xCDAB3412));
-    REQUIRE(networkData.c == int64_t(0x2143BADCCDAB3412));
+    REQUIRE(networkData.c == 0x2143BADCCDAB3412LL);
 }
 
 

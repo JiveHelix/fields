@@ -21,13 +21,13 @@ namespace fields
 
 
 template<auto Member>
-[[nodiscard]] consteval auto GetPrettyName()
+[[nodiscard]] consteval std::string_view GetPrettyName()
 {
     return PRETTY_FUNCTION;
 }
 
 template<typename Member>
-[[nodiscard]] consteval auto GetPrettyName()
+[[nodiscard]] consteval std::string_view GetPrettyName()
 {
     return PRETTY_FUNCTION;
 }
@@ -78,6 +78,10 @@ struct PrettyField
     static constexpr std::string_view pretty = PrettyName<0, ProbePretty>;
     static constexpr auto nameOffset = pretty.find("PROBE_FIELD");
 
+    static_assert(
+        nameOffset < pretty.size(),
+        "Find returned past end - possible dangling string_view");
+
     // sizeof("") includes the trailing null byte
     // subtract it
     static constexpr auto tail =
@@ -91,6 +95,8 @@ struct MemberName_
     static constexpr std::string_view pretty = PrettyName<index, T>;
     static constexpr auto end = pretty.find(PrettyField::tail);
     static constexpr auto count = end - PrettyField::nameOffset;
+    static_assert(PrettyField::nameOffset < pretty.size());
+    static_assert(PrettyField::nameOffset + count <= pretty.size());
     static constexpr auto name = pretty.substr(PrettyField::nameOffset, count);
 };
 

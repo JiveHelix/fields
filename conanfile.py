@@ -1,9 +1,12 @@
-from cmake_includes.conan import HeaderConanFile
+from conan import ConanFile
 
 
-class FieldsConan(HeaderConanFile):
+class FieldsConan(ConanFile):
     name = "fields"
     version = "1.4.0"
+
+    python_requires = "boiler/0.1"
+    python_requires_extend = "boiler.HeaderConanFile"
 
     # Optional metadata
     license = "MIT"
