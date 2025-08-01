@@ -21,7 +21,6 @@ struct ImplicitPrecision
 };
 
 
-DECLARE_EQUALITY_OPERATORS(ImplicitPrecision)
 DECLARE_OUTPUT_STREAM_OPERATOR(ImplicitPrecision)
 
 

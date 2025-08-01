@@ -55,7 +55,11 @@ namespace detail
     {
         if constexpr (fields::HasFields<T>)
         {
-            if constexpr (!HasPrecision<T>::value)
+            if constexpr (jive::HasMemberEqual<T>)
+            {
+                return value == other;
+            }
+            else if constexpr (!HasPrecision<T>::value)
             {
                 // There is no precision specified on the inner fields class.
                 // Use the precision of the outer container.
