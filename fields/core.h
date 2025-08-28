@@ -85,6 +85,25 @@ inline constexpr bool ImplementsStructure =
     ImplementsStructure_<T, Json>::value;
 
 
+/** Conversion from enum to string and back **/
+
+template<typename T>
+concept HasToString = requires(T t)
+{
+    { ToString(t) } -> std::convertible_to<std::string>;
+};
+
+
+template<typename E> struct Tag { using type = E; };
+
+template<typename T>
+concept HasToValue = requires
+{
+    { ToValue(Tag<T>{}, std::declval<std::string>()) }
+        -> std::convertible_to<T>;
+};
+
+
 // Optionally, a class can provide it's own Unstructure method, as a non-static
 // class method without arguments, and returning a Json instance.
 template<typename T, typename Json, typename = void>
@@ -342,6 +361,17 @@ Json Unstructure(const T &structured)
 
         return {};
     }
+    else if constexpr (std::is_enum_v<T>)
+    {
+        if constexpr (HasToString<T>)
+        {
+            return ToString(structured);
+        }
+        else
+        {
+            return structured;
+        }
+    }
     else if constexpr (!std::is_empty_v<T>)
     {
         // All other members must be implicitly convertible to
@@ -489,6 +519,17 @@ T Restructure(const Json &unstructured)
         if (!unstructured.is_null())
         {
             result = Structure<ValueType>(unstructured);
+        }
+    }
+    else if constexpr (std::is_enum_v<T>)
+    {
+        if constexpr (HasToValue<T>)
+        {
+            result = ToValue(Tag<T>{}, std::string(unstructured));
+        }
+        else
+        {
+            result = unstructured;
         }
     }
     else
