@@ -8,9 +8,6 @@ namespace fields
 {
 
 
-static constexpr size_t maximumReflectCount = 16;
-
-
 template<typename T, size_t memberCount = GetMemberCount<T>()>
     requires (memberCount <= maximumReflectCount)
 constexpr decltype(auto) GetMemberTuple(T &&t)

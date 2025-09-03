@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 
 
-// #define FIELDS_TESTS_VERBOSE
+#define FIELDS_TESTS_VERBOSE
 
 
 #ifdef FIELDS_TESTS_VERBOSE
@@ -184,23 +184,6 @@ struct ComedyTroupe
     Python sirRobinTheNotQuiteSoBraveAsSirLancelot;
     Python sirVedevereTheWise;
     Python sirGalahadThePure;
-
-    static constexpr auto fields = std::make_tuple(
-        fields::Field(&ComedyTroupe::movieTitle, "movieTitle"),
-        fields::Field(
-            &ComedyTroupe::arthurKingOfTheBritons,
-            "arthurKingOfTheBritons"),
-        fields::Field(
-            &ComedyTroupe::sirLancelotTheBrave,
-            "sirLancelotTheBrave"),
-        fields::Field(
-            &ComedyTroupe::patsyArthursServant,
-            "patsyArthursServant"),
-        fields::Field(
-            &ComedyTroupe::sirRobinTheNotQuiteSoBraveAsSirLancelot,
-            "sirRobinTheNotQuiteSoBraveAsSirLancelot"),
-        fields::Field(&ComedyTroupe::sirVedevereTheWise, "sirVedevereTheWise"),
-        fields::Field(&ComedyTroupe::sirGalahadThePure, "sirGalahadThePure"));
 };
 
 
@@ -222,6 +205,8 @@ TEST_CASE("Unstructure/Structure a comedy troupe", "[fields]")
         .sirVedevereTheWise = Python::jones,
         .sirGalahadThePure = Python::palin
     };
+
+    STATIC_REQUIRE(fields::GetMemberCount<ComedyTroupe>() == 7);
 
     FIELDS_TEST_LOG(fields::DescribeColorized(troupe, 1));
     auto asJson = fields::Unstructure<nlohmann::json>(troupe);

@@ -274,5 +274,11 @@ int main()
     rocket.z = 42.0;
     std::cout << fields::Describe(rocket) << std::endl;
 
+
+    auto asJson = fields::Unstructure<nlohmann::json>(rocket);
+    std::cout << "\njson:\n" << asJson.dump(4) << std::endl;
+    auto recoveredRocket = fields::Structure<Rocket>(asJson);
+    std::cout << fields::DescribeColorized(recoveredRocket, 1);
+
     return 0;
 }
