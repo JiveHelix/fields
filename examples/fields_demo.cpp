@@ -159,9 +159,9 @@ DECLARE_OUTPUT_STREAM_OPERATOR(Bar)
 
 struct Wobble
 {
-    uint8_t alpha[2][4];
+    std::array<std::array<uint8_t, 4>, 2> alpha;
     Bar frob;
-    Groot flub[2][2];
+    std::array<std::array<Groot, 2>, 2> flub;
     std::string message;
     std::vector<Groot> numbers;
     std::map<std::string, Groot> fooByName;
@@ -245,14 +245,14 @@ static_assert(jive::IsOptional<OptionalZ>);
 int main()
 {
     Wobble original{
-        {{'x', 'v', 'u', 't'}, {'s', 'r', 'q', 'p'}},
-        {{13, 42000, 56.0}, {-19000, 15, 3.14}, 9.80},
-        {
-            {{56, 88, 3.1415926}, {57, 89, 4.1415926}},
-            {{58, 90, 5.1415926}, {59, 60, 6.1415926}}},
-        "This is my message",
-        {{0, 1, 2}, {117, -67, 13e-9}, {117 * 2, -67 * 2, 13e-9 * 2}},
-        {}};
+        .alpha={{{{'x', 'v', 'u', 't'}}, {{'s', 'r', 'q', 'p'}}}},
+        .frob={{13, 42000, 56.0}, {-19000, 15, 3.14}, 9.80},
+        .flub={{
+            {{ {56, 88, 3.1415926}, {57, 89, 4.1415926} }},
+            {{ {58, 90, 5.1415926}, {59, 60, 6.1415926} }} }},
+        .message="This is my message",
+        .numbers={{0, 1, 2}, {117, -67, 13e-9}, {117 * 2, -67 * 2, 13e-9 * 2}},
+        .fooByName={}};
 
     original.fooByName["1st"] = {0, 1, 2};
     original.fooByName["2nd"] = {117, -67, 13e-9};
@@ -315,6 +315,12 @@ int main()
 
     rocket.z = 42.0;
     std::cout << fields::Describe(rocket) << std::endl;
+
+    fields::ForEachField<Rocket>(
+        [](const auto &field)
+        {
+            PrintFieldType(field);
+        });
 
     return 0;
 }

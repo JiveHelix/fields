@@ -6,6 +6,7 @@
 
 #include <catch2/catch.hpp>
 #include <fields/reflect/get_member_count.h>
+#include <fields/reflect/reflect.h>
 #include <optional>
 
 
@@ -77,4 +78,37 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
 
     struct B { std::array<int,2> a; int k; };
     STATIC_REQUIRE(fields::GetMemberCount<B>() == 2);
+}
+
+
+namespace name_tests
+{
+
+
+template<typename T>
+struct HasT
+{
+    T value;
+};
+
+
+struct Names
+{
+    int foo;
+    std::vector<float> bar;
+    HasT<double> wibble;
+    std::vector<HasT<double>> wobble;
+};
+
+
+} // end namespace name_tests
+
+
+TEST_CASE("Testing member names", "[fields]")
+{
+    using Reflected = fields::Reflect<name_tests::Names>;
+    REQUIRE(Reflected::name<0> == "foo");
+    REQUIRE(Reflected::name<1> == "bar");
+    REQUIRE(Reflected::name<2> == "wibble");
+    REQUIRE(Reflected::name<3> == "wobble");
 }
