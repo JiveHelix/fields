@@ -3,6 +3,7 @@
 
 #include <string_view>
 
+#include <jive/compiler.h>
 #include "get_member_tuple.h"
 #include "get_member_count.h"
 
@@ -107,7 +108,7 @@ struct PrettyField
     static constexpr auto tail =
         pretty.substr(nameOffset + sizeof("PROBE_FIELD") - 1);
 
-#if __GNUC__
+#ifdef GCC_COMPILER
     // pretty includes the name of the containing structure, twice.
     static constexpr auto extraStructNameOffset =
         2 * (sizeof("PrettyField") - 1);
@@ -129,7 +130,7 @@ struct MemberName_
     static constexpr std::string_view pretty = PrettyName<index, T>;
     static constexpr auto end = pretty.find(PrettyField::tail);
 
-#if __GNUC__
+#ifdef GCC_COMPILER
     static constexpr auto nameOffset =
         PrettyField::nameOffset
         - PrettyField::extraStructNameOffset
