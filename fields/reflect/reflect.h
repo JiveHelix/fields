@@ -94,6 +94,39 @@ void ForEach(T &&t, Function &&function)
 }
 
 
+template<typename T, typename Function, size_t... Is>
+    requires CanReflect<std::remove_cvref_t<T>>
+void ForEachZipImpl(
+    T &&left,
+    T &&right,
+    Function &&function, std::index_sequence<Is...>)
+{
+    static constexpr auto names = MemberNames<T>;
+    auto &&leftMembers = GetMemberTuple(left);
+    auto &&rightMembers = GetMemberTuple(right);
+    using Members = decltype(leftMembers);
+
+    (function(
+        std::get<Is>(names),
+        ForwardGet<Is>(std::forward<Members>(leftMembers)),
+        ForwardGet<Is>(std::forward<Members>(rightMembers))), ...);
+}
+
+
+template<typename T, typename Function>
+    requires CanReflect<std::remove_cvref_t<T>>
+void ForEachZip(T &&left, T &&right, Function &&function)
+{
+    static constexpr auto count = GetMemberCount<T>();
+
+    ForEachZipImpl(
+        std::forward<T>(left),
+        std::forward<T>(right),
+        std::forward<Function>(function),
+        std::make_index_sequence<count>{});
+}
+
+
 template<typename T>
 void PrintMemberTypes(std::ostream &output)
 {

@@ -202,6 +202,8 @@ template<typename Json, typename T>
 Json Unstructure(const T &structured);
 
 
+// Creates a std::vector<T> for 1-dim arrays,
+// Creates a std::vector<std::vector<T>> for 2-dim arrays, etc.
 template<typename T, typename Enable = void>
 struct Dimensional {};
 
@@ -312,7 +314,11 @@ Json UnstructureFromReflection(const T &structured)
 template<typename Json, typename T>
 Json Unstructure(const T &structured)
 {
-    if constexpr (ImplementsUnstructure<T, Json>)
+    if constexpr (std::is_same_v<T, Json>)
+    {
+        return structured;
+    }
+    else if constexpr (ImplementsUnstructure<T, Json>)
     {
         return structured.template Unstructure<Json>();
     }

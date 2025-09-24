@@ -652,6 +652,10 @@ public:
                 // ASCII character.
                 outputStream << int16_t{this->object_};
             }
+            else if constexpr (std::is_array_v<T>)
+            {
+                this->DescribeArray(outputStream, this->object_);
+            }
             else if constexpr (jive::HasOutputStreamOperator<T>::value)
             {
                 outputStream << this->object_;
@@ -665,10 +669,6 @@ public:
                     || jive::IsArray<T>)
             {
                 this->DescribeContainer(outputStream, this->object_);
-            }
-            else if constexpr (std::is_array_v<T>)
-            {
-                this->DescribeArray(outputStream, this->object_);
             }
             else if constexpr (std::is_pointer_v<T>)
             {

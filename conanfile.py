@@ -3,7 +3,7 @@ from conan import ConanFile
 
 class FieldsConan(ConanFile):
     name = "fields"
-    version = "1.5.0"
+    version = "1.6.0"
 
     python_requires = "boiler/0.1"
     python_requires_extend = "boiler.HeaderConanFile"
@@ -23,4 +23,4 @@ class FieldsConan(ConanFile):
         self.build_requires("nlohmann_json/[~3.11]")
 
     def requirements(self):
-        self.requires("jive/[~1.4]", transitive_headers=True)
+        self.requires("jive/[>=1.4 <2]", transitive_headers=True)

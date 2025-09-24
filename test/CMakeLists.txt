@@ -9,6 +9,7 @@ add_catch2_test(
         marshal_tests.cpp
         byte_swap_tests.cpp
         default_tests.cpp
+        diff_tests.cpp
         reflect_tests.cpp
     LINK
         fields
