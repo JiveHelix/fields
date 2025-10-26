@@ -17,7 +17,8 @@ target_sources(
     enum_field.h
     fields.h
     marshal.h
-    network_byte_order.h)
+    network_byte_order.h
+    serialize.h)
 
 install(
     DIRECTORY ${PROJECT_SOURCE_DIR}/fields

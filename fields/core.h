@@ -16,8 +16,8 @@
 #include <jive/for_each.h>
 #include <jive/optional.h>
 #include <jive/type_traits.h>
-#include "fields/has_fields.h"
-#include "fields/reflect.h"
+#include <fields/has_fields.h>
+#include <fields/reflect.h>
 
 
 namespace fields
