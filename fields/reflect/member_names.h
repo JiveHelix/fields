@@ -108,7 +108,8 @@ struct PrettyField
     static constexpr auto tail =
         pretty.substr(nameOffset + sizeof("PROBE_FIELD") - 1);
 
-#ifdef GCC_COMPILER
+#if defined(GCC_COMPILER) && !defined(_MSC_VER)
+
     // pretty includes the name of the containing structure, twice.
     static constexpr auto extraStructNameOffset =
         2 * (sizeof("PrettyField") - 1);
@@ -120,6 +121,21 @@ struct PrettyField
     // Hopefully all of this brittleness goes away with C++26.
     static constexpr auto extraTypeNameOffset =
         jive::detail::TypeName<Pointer<int>>().size();
+
+#else if defined(_MSC_VER)
+
+    static constexpr auto extraStructNameOffset =
+        sizeof("struct fields::ProbePretty") - 1;
+
+    // It also includes the name of the type, with inconsistent spacing inside
+    // Pointer<...>.
+    // Pointer<int> is fine, but Pointer<std::vector<int> > adds an extra
+    // space.
+    // Hopefully all of this brittleness goes away with C++26.
+    static constexpr auto extraTypeNameOffset =
+        jive::detail::TypeName<Pointer<int>>().size()
+        + jive::detail::TypeName<int>().size();
+
 #endif
 };
 
@@ -130,13 +146,21 @@ struct MemberName_
     static constexpr std::string_view pretty = PrettyName<index, T>;
     static constexpr auto end = pretty.find(PrettyField::tail);
 
-#ifdef GCC_COMPILER
+#if defined(GCC_COMPILER) && !defined(_MSC_VER)
     static constexpr auto nameOffset =
         PrettyField::nameOffset
         - PrettyField::extraStructNameOffset
         + (2 * jive::detail::TypeName<T>().size())
         - PrettyField::extraTypeNameOffset
         + jive::detail::TypeName<Pointer<MemberType<index, T>>>().size();
+#elif defined(_MSC_VER)
+    static constexpr auto nameOffset =
+        PrettyField::nameOffset
+        - PrettyField::extraStructNameOffset
+        + jive::detail::TypeName<T>().size()
+        - PrettyField::extraTypeNameOffset
+        + jive::detail::TypeName<Pointer<MemberType<index, T>>>().size()
+        + jive::detail::TypeName<MemberType<index, T>>().size();
 #else
     static constexpr auto nameOffset = PrettyField::nameOffset;
 #endif

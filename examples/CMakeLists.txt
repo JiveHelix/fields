@@ -35,6 +35,6 @@ target_link_libraries(
     project_options
     fields)
 
-install(TARGETS fields_demo DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS precision_demo DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS byte_swap_demo DESTINATION ${CMAKE_INSTALL_BINDIR})
+# install(TARGETS fields_demo DESTINATION ${CMAKE_INSTALL_BINDIR})
+# install(TARGETS precision_demo DESTINATION ${CMAKE_INSTALL_BINDIR})
+# install(TARGETS byte_swap_demo DESTINATION ${CMAKE_INSTALL_BINDIR})

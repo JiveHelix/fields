@@ -31,7 +31,7 @@ struct CompareMe
     float z;
     ImplicitPrecision foo;
 
-    static constexpr ssize_t precision = 4;
+    static constexpr int precision = 4;
 
     static constexpr auto fields = std::make_tuple(
         fields::Field(&CompareMe::x, "x"),
@@ -70,7 +70,7 @@ struct CompareWithOptional
     float z;
     std::optional<ImplicitPrecision> foo;
 
-    static constexpr ssize_t precision = 4;
+    static constexpr int precision = 4;
 
     static constexpr auto fields = std::make_tuple(
         fields::Field(&CompareWithOptional::x, "x"),
@@ -132,7 +132,7 @@ struct ExplicitPrecision
     float a;
     float b;
 
-    static constexpr ssize_t precision = 6;
+    static constexpr int precision = 6;
 
     static constexpr auto fields = std::make_tuple(
         fields::Field(&ExplicitPrecision::a, "a"),
@@ -150,7 +150,7 @@ struct CompareMeToo
     float z;
     ExplicitPrecision foo;
 
-    static constexpr ssize_t precision = 4;
+    static constexpr int precision = 4;
 
     static constexpr auto fields = std::make_tuple(
         fields::Field(&CompareMeToo::x, "x"),

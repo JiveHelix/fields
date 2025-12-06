@@ -23,10 +23,10 @@
 namespace fields
 {
 
-template<ssize_t precision, HasFields T>
+template<int precision, HasFields T>
 constexpr auto PrecisionCompare(const T &value);
 
-template<ssize_t precision, CanReflect T>
+template<int precision, CanReflect T>
 constexpr auto PrecisionCompare(const T &value);
 
 
@@ -45,12 +45,12 @@ namespace detail
         <
             std::enable_if_t
             <
-                std::is_convertible_v<decltype(T::precision), ssize_t>
+                std::is_convertible_v<decltype(T::precision), int>
             >
         >
     > : std::true_type {};
 
-    template<ssize_t precision, typename T>
+    template<int precision, typename T>
     bool DoEqual(const T &value, const T &other)
     {
         if constexpr (fields::HasFields<T>)
@@ -87,7 +87,7 @@ namespace detail
         }
     }
 
-    template<ssize_t precision, typename T>
+    template<int precision, typename T>
     bool Equal(const T &value, const T &other)
     {
         if constexpr (jive::IsOptional<T>)
@@ -110,10 +110,10 @@ namespace detail
         }
     }
 
-    template<ssize_t precision, typename T, typename Enable = void>
+    template<int precision, typename T, typename Enable = void>
     class Compare {};
 
-    template<ssize_t precision, typename T>
+    template<int precision, typename T>
     class Compare
     <
         precision,
@@ -178,7 +178,7 @@ namespace detail
     };
 
 
-    template<ssize_t precision, typename T>
+    template<int precision, typename T>
     class Compare
     <
         precision,
@@ -231,7 +231,7 @@ namespace detail
     template<typename T, typename = void>
     struct Precision
     {
-        static constexpr ssize_t value = -1;
+        static constexpr int value = -1;
     };
 
 
@@ -245,11 +245,11 @@ namespace detail
         >
     >
     {
-        static constexpr ssize_t value = T::precision;
+        static constexpr int value = T::precision;
     };
 
 
-    template<ssize_t precision, typename T>
+    template<int precision, typename T>
     auto MakeCompare(const T &value)
     {
         return Compare<precision, T>(value);
@@ -321,7 +321,7 @@ namespace detail
 } // end namespace detail
 
 
-template<ssize_t precision, HasFields T, std::size_t... I>
+template<int precision, HasFields T, std::size_t... I>
 constexpr auto ComparisonTuple(
         const T &object,
         std::index_sequence<I...>)
@@ -332,7 +332,7 @@ constexpr auto ComparisonTuple(
 }
 
 
-template<ssize_t precision, CanReflect T, std::size_t... I>
+template<int precision, CanReflect T, std::size_t... I>
 constexpr auto ComparisonTuple(
         const T &object,
         std::index_sequence<I...>)
@@ -354,7 +354,7 @@ constexpr auto ComparisonTuple(const T &object)
         detail::SelectFields<T, Fields, propertyCount>(object, T::fields));
 }
 
-template<ssize_t precision, HasFields T>
+template<int precision, HasFields T>
 constexpr auto PrecisionCompare(const T &value)
 {
     using Fields = decltype(T::fields);
@@ -376,7 +376,7 @@ constexpr auto ComparisonTuple(const T &object)
         detail::SelectMembers<T, Reflection, Reflection::count>(object));
 }
 
-template<ssize_t precision, CanReflect T>
+template<int precision, CanReflect T>
 constexpr auto PrecisionCompare(const T &object)
 {
     using Reflection = Reflect<T>;

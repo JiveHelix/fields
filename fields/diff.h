@@ -521,7 +521,14 @@ T & DoPatch(T &base, const Json &unstructured)
     {
         if (!unstructured.is_null())
         {
-            base = Patch(*base, unstructured);
+            if (base)
+            {
+                base = Patch(*base, unstructured);
+            }
+            else
+            {
+                base.emplace(unstructured);
+            }
         }
     }
     else if constexpr (std::is_enum_v<T>)
