@@ -20,6 +20,15 @@ void Write(std::ostream &output, const T &value)
                 Write(output, value.*(field.member));
             });
     }
+    else if constexpr (CanReflect<T>)
+    {
+        ForEach(
+            value,
+            [&output](const auto &, const auto &member)
+            {
+                Write(output, member);
+            });
+    }
     else
     {
         jive::io::Write(output, value);
@@ -39,6 +48,20 @@ T Read(std::istream &input)
             {
                 using Member = FieldType<decltype(field)>;
                 result.*(field.member) = Read<Member>(input);
+            });
+
+        return result;
+    }
+    else if constexpr (CanReflect<T>)
+    {
+        T result{};
+
+        ForEach(
+            result,
+            [&input](const auto &, auto &member)
+            {
+                using Member = std::remove_cvref_t<decltype(member)>;
+                member = Read<Member>(input);
             });
 
         return result;

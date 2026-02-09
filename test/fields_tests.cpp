@@ -5,9 +5,10 @@
   */
 
 #include <catch2/catch.hpp>
-#include "fields/fields.h"
+#include <fields/fields.h>
 #include <optional>
 #include <nlohmann/json.hpp>
+#include <fields/binary_io.h>
 
 
 #define FIELDS_TESTS_VERBOSE

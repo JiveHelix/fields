@@ -4,6 +4,7 @@ add_executable(fields_demo fields_demo.cpp)
 add_executable(reflect_demo reflect_demo.cpp)
 add_executable(precision_demo precision_demo.cpp)
 add_executable(byte_swap_demo byte_swap_demo.cpp)
+add_executable(binary_io binary_io.cpp)
 
 target_link_libraries(
     fields_demo
@@ -30,6 +31,13 @@ target_link_libraries(
 
 target_link_libraries(
     byte_swap_demo
+    PUBLIC
+    project_warnings
+    project_options
+    fields)
+
+target_link_libraries(
+    binary_io
     PUBLIC
     project_warnings
     project_options
