@@ -122,7 +122,7 @@ struct PrettyField
     static constexpr auto extraTypeNameOffset =
         jive::detail::TypeName<Pointer<int>>().size();
 
-#else if defined(_MSC_VER)
+#elif defined(_MSC_VER)
 
     static constexpr auto extraStructNameOffset =
         sizeof("struct fields::ProbePretty") - 1;

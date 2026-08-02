@@ -293,6 +293,10 @@ GNU_NO_RESTRICT_POP
 }
 
 
+template<typename T>
+concept NoPretty = T::fieldsNoPretty;
+
+
 template
 <
     typename Object,
@@ -316,7 +320,9 @@ std::ostream & DescribeFields(
             Describe<FieldElementType<I, Fields>>(
                 object.*(std::get<I>(fields).member),
                 DecorateName{}(std::get<I>(fields).name),
-                (indent < 0) ? -1 : indent + 1).Style(style)),
+                (indent < 0 || NoPretty<Object>)
+                    ? -1
+                    : indent + 1).Style(style)),
     ...);
 
     return outputStream;
@@ -386,7 +392,9 @@ std::ostream & DescribeReflected(
             Describe<typename Reflection::template Element<I>>(
                 GetMember<I>(object),
                 DecorateName{}(std::get<I>(Reflection::names)),
-                (indent < 0) ? -1 : indent + 1).Style(style)),
+                (indent < 0 || NoPretty<Object>)
+                    ? -1
+                    : indent + 1).Style(style)),
     ...);
 
     return outputStream;
@@ -425,18 +433,6 @@ template<typename T, typename ColorsType, typename VerboseTypes>
 class Describe
 {
 public:
-#if 0
-    Describe(const T &object, const std::string &name, int indent = -1)
-        :
-        object_{object},
-        name_{name},
-        indent_{indent},
-        style_(Colors::Create<ColorsType>(), VerboseTypes::value)
-    {
-
-    }
-#endif
-
     Describe(const T &object, std::string_view name, int indent = -1)
         :
         object_{object},
@@ -478,18 +474,8 @@ public:
         return *this;
     }
 
-
     std::string GetIndent() const
     {
-        if constexpr (std::is_arithmetic_v<T>)
-        {
-            if (this->name_.empty())
-            {
-                // Print un-named numeric values on the same line.
-                return {};
-            }
-        }
-
         return MakeIndent(this->indent_);
     }
 
@@ -543,7 +529,6 @@ public:
         {
             outputStream << Describe<typename Object::value_type>(
                 value,
-                std::to_string(count),
                 (this->indent_ < 0) ? -1 : this->indent_ + 1)
                     .Style(this->style_);
 
@@ -680,7 +665,7 @@ public:
                             std::remove_const_t<std::remove_pointer_t<T>>
                         >(
                             *(this->object_),
-                            (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                            this->indent_)
                                 .Style(this->style_);
                 }
             }
@@ -693,7 +678,7 @@ public:
                     outputStream <<
                         Describe<ValueType>(
                             *(this->object_),
-                            (this->indent_ < 0) ? -1 : this->indent_ + 1)
+                            this->indent_)
                                 .Style(this->style_);
                 }
                 else

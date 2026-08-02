@@ -235,7 +235,6 @@ int main()
 
     auto recovered = fields::Structure<Wobble>(recoveredUnstructured);
 
-
     std::cout << "\nDescribeColorizedVerbose with indent argument "
               << "(multi-line with type information):"
               << std::endl;
@@ -278,7 +277,7 @@ int main()
     auto asJson = fields::Unstructure<nlohmann::json>(rocket);
     std::cout << "\njson:\n" << asJson.dump(4) << std::endl;
     auto recoveredRocket = fields::Structure<Rocket>(asJson);
-    std::cout << fields::DescribeColorized(recoveredRocket, 1);
+    std::cout << fields::Describe(recoveredRocket, 1) << std::endl;
 
     return 0;
 }
