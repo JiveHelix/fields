@@ -17,6 +17,7 @@
 #include <jive/optional.h>
 #include <jive/type_traits.h>
 #include <fields/has_fields.h>
+#include <fields/for_each.h>
 #include <fields/reflect.h>
 
 
@@ -53,6 +54,31 @@ struct Field
     const char* name;
     std::tuple<OtherNames...> otherNames;
 };
+
+
+template<typename T>
+struct IsField_: std::false_type {};
+
+
+template<typename Class, typename T, typename... OtherNames>
+struct IsField_<Field<Class, T, OtherNames...>>: std::true_type {};
+
+
+template<typename T>
+concept IsField = IsField_<T>::value;
+
+
+template<typename T>
+struct IsFieldsTuple_: std::false_type {};
+
+
+template<IsField... Fields>
+struct IsFieldsTuple_<std::tuple<Fields...>>: std::true_type {};
+
+
+template<typename T>
+concept IsFieldsTuple = IsFieldsTuple_<T>::value;
+
 
 
 template<typename T, typename = void>
@@ -159,15 +185,6 @@ constexpr auto GetFields(const T &object)
 }
 
 
-// Call a function for each field
-template <typename T, typename F>
-constexpr void ForEachField(F &&function)
-{
-    static_assert(HasFields<T>, "Missing required fields tuple");
-    jive::ForEach(T::fields, std::forward<F>(function));
-}
-
-
 template<size_t Index, typename T>
     requires HasFields<std::remove_cvref_t<T>>
 decltype(auto) GetMember(T &&t)
@@ -265,6 +282,33 @@ Json UnstructureFromFields(const T &structured)
     Json result;
 
     ForEachField<T>(
+        [&](const auto &field) -> void
+        {
+            using Type = FieldType<decltype(field)>;
+
+            if constexpr (std::is_array_v<Type>)
+            {
+                auto asVector = UnstructureArray(structured.*(field.member));
+                result[field.name] = Unstructure<Json>(asVector);
+            }
+            else if constexpr (!std::is_empty_v<Type>)
+            {
+                result[field.name] =
+                    Unstructure<Json>(structured.*(field.member));
+            }
+        });
+
+    return result;
+}
+
+
+template<typename Json, typename T, IsFieldsTuple Fields>
+Json UnstructureFromFields(const T &structured, const Fields &fields)
+{
+    Json result;
+
+    jive::ForEach(
+        fields,
         [&](const auto &field) -> void
         {
             using Type = FieldType<decltype(field)>;

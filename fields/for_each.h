@@ -2,6 +2,7 @@
 
 
 #include <jive/for_each.h>
+#include <fields/has_fields.h>
 
 
 namespace fields
@@ -15,9 +16,6 @@ constexpr void ForEachField(F &&function)
     static_assert(HasFields<T>, "Missing required fields tuple");
     jive::ForEach(T::fields, std::forward<F>(function));
 }
-
-
-
 
 
 }

@@ -3,7 +3,9 @@
 
 #include <sstream>
 #include <string>
+#include <fstream>
 #include <nlohmann/json.hpp>
+#include <fields/core.h>
 
 
 namespace fields
