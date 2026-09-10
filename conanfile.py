@@ -3,7 +3,7 @@ from conan import ConanFile
 
 class FieldsConan(ConanFile):
     name = "fields"
-    version = "1.6.0"
+    version = "1.7.0"
 
     python_requires = "boiler/0.2"
     python_requires_extend = "boiler.HeaderConanFile"
