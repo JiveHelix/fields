@@ -1,7 +1,7 @@
 #pragma once
 
 #include <tuple>
-#include <format>
+#include <fmt/format.h>
 #include <string_view>
 #include <fields/has_fields.h>
 #include <fields/for_each.h>
@@ -18,9 +18,9 @@ template
 >
 struct Formatter
 {
-    std::formatter<F> formatter;
+    fmt::formatter<F> formatter;
 
-    constexpr auto parse(std::format_parse_context & context)
+    constexpr auto parse(fmt::format_parse_context & context)
     {
         return formatter.parse(context);
     }
@@ -36,8 +36,8 @@ struct Formatter
         ForEachField<T>(
             [&](const auto &field) -> void
             {
-                out = std::format_to(out, "{}", separator);
-                out = std::format_to(out, "{}:", field.name);
+                out = fmt::format_to(out, "{}", separator);
+                out = fmt::format_to(out, "{}:", field.name);
 
                 using MemberType =
                     typename std::remove_cvref_t<decltype(field)>::Type;
@@ -50,7 +50,7 @@ struct Formatter
                 else
                 {
                     // Use the default formatter for this member.
-                    out = std::format_to(out, "{}", hasFields.*(field.member));
+                    out = fmt::format_to(out, "{}", hasFields.*(field.member));
                 }
 
                 // Set the separator after the first member is formatted.

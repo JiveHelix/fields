@@ -24,3 +24,4 @@ class FieldsConan(ConanFile):
 
     def requirements(self):
         self.requires("jive/[>=1.4 <2]", transitive_headers=True)
+        self.requires("fmt/[~10]", transitive_headers=True)
