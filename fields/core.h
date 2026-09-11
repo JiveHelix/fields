@@ -374,7 +374,7 @@ Json Unstructure(const T &structured)
     {
         return UnstructureFromReflection<Json>(structured);
     }
-    else if constexpr (jive::IsKeyValueContainer<T>::value)
+    else if constexpr (jive::IsKeyValueContainer<T>)
     {
         // Convert to a map of unstructured json objects.
         std::map<typename T::key_type, Json> result;
@@ -386,7 +386,7 @@ Json Unstructure(const T &structured)
 
         return result;
     }
-    else if constexpr (jive::IsValueContainer<T>::value || jive::IsArray<T>)
+    else if constexpr (jive::IsValueContainer<T> || jive::IsArray<T>)
     {
         // Convert the iterable to a vector of unstructured values.
         std::vector<Json> result;
@@ -398,7 +398,7 @@ Json Unstructure(const T &structured)
 
         return result;
     }
-    else if constexpr (jive::IsBitset<T>::value)
+    else if constexpr (jive::IsBitset<T>)
     {
         return structured.to_ullong();
     }
@@ -536,7 +536,7 @@ T Restructure(const Json &unstructured)
                 }
             });
     }
-    else if constexpr (jive::IsKeyValueContainer<T>::value)
+    else if constexpr (jive::IsKeyValueContainer<T>)
     {
         // Convert the key value pairs to the map type.
         auto asMap =
@@ -548,7 +548,7 @@ T Restructure(const Json &unstructured)
             result[key] = Structure<typename T::mapped_type>(value);
         }
     }
-    else if constexpr (jive::IsValueContainer<T>::value)
+    else if constexpr (jive::IsValueContainer<T>)
     {
         for (auto &value: unstructured)
         {
@@ -584,11 +584,11 @@ T Restructure(const Json &unstructured)
     }
     else
     {
-        if constexpr (jive::IsString<T>::value)
+        if constexpr (jive::IsString<T>)
         {
             result = static_cast<std::string>(unstructured);
         }
-        else if constexpr (jive::IsBitset<T>::value)
+        else if constexpr (jive::IsBitset<T>)
         {
             result = static_cast<unsigned long long>(unstructured);
         }

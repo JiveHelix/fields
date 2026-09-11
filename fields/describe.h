@@ -189,7 +189,7 @@ concept CanDescribe =
     || HasFields<T>
     || HasDescribe<T>
     || HasDoDescribe<T>
-    || jive::HasOutputStreamOperator<T>::value;
+    || jive::HasOutputStreamOperator<T>;
 
 
 template<
@@ -641,16 +641,16 @@ public:
             {
                 this->DescribeArray(outputStream, this->object_);
             }
-            else if constexpr (jive::HasOutputStreamOperator<T>::value)
+            else if constexpr (jive::HasOutputStreamOperator<T>)
             {
                 outputStream << this->object_;
             }
-            else if constexpr (jive::IsKeyValueContainer<T>::value)
+            else if constexpr (jive::IsKeyValueContainer<T>)
             {
                 this->DescribeMap(outputStream, this->object_);
             }
             else if constexpr (
-                    jive::IsValueContainer<T>::value
+                    jive::IsValueContainer<T>
                     || jive::IsArray<T>)
             {
                 this->DescribeContainer(outputStream, this->object_);

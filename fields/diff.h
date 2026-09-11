@@ -221,7 +221,7 @@ std::optional<Json> Diff(const T &structured, const T &compare)
     {
         return DiffFromReflection<Json>(structured, compare);
     }
-    else if constexpr (jive::IsKeyValueContainer<T>::value)
+    else if constexpr (jive::IsKeyValueContainer<T>)
     {
         // Convert to a map of unstructured json objects.
         std::map<typename T::key_type, Json> result;
@@ -262,7 +262,7 @@ std::optional<Json> Diff(const T &structured, const T &compare)
 
         return result;
     }
-    else if constexpr (jive::IsValueContainer<T>::value || jive::IsArray<T>)
+    else if constexpr (jive::IsValueContainer<T> || jive::IsArray<T>)
     {
         // Convert the iterable to a sparse std::map of unstructured values.
         if (structured.size() != compare.size())
@@ -291,7 +291,7 @@ std::optional<Json> Diff(const T &structured, const T &compare)
 
         return result;
     }
-    else if constexpr (jive::IsBitset<T>::value)
+    else if constexpr (jive::IsBitset<T>)
     {
         if (structured == compare)
         {
@@ -447,7 +447,7 @@ T & DoPatch(T &base, const Json &unstructured)
                 }
             });
     }
-    else if constexpr (jive::IsKeyValueContainer<T>::value)
+    else if constexpr (jive::IsKeyValueContainer<T>)
     {
         // Convert the key value pairs to the map type.
         auto asMap =
@@ -472,7 +472,7 @@ T & DoPatch(T &base, const Json &unstructured)
             }
         }
     }
-    else if constexpr (jive::IsValueContainer<T>::value)
+    else if constexpr (jive::IsValueContainer<T>)
     {
         if (unstructured.is_object())
         {
@@ -544,11 +544,11 @@ T & DoPatch(T &base, const Json &unstructured)
     }
     else
     {
-        if constexpr (jive::IsString<T>::value)
+        if constexpr (jive::IsString<T>)
         {
             base = static_cast<std::string>(unstructured);
         }
-        else if constexpr (jive::IsBitset<T>::value)
+        else if constexpr (jive::IsBitset<T>)
         {
             base = static_cast<unsigned long long>(unstructured);
         }

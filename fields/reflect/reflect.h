@@ -21,7 +21,7 @@ concept CanReflect =
     && !jive::IsArray<T>
     && !std::is_pointer_v<T>
     && !jive::IsOptional<T>
-    && !jive::IsValueContainer<T>::value
+    && !jive::IsValueContainer<T>
     && (GetMemberCount<T>() > 0)
     && (GetMemberCount<T>() < maximumReflectCount);
 
