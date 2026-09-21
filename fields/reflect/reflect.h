@@ -4,9 +4,9 @@
 #include <jive/describe_type.h>
 #include <jive/optional.h>
 
-#include "fields/has_fields.h"
-#include "get_member_count.h"
-#include "member_names.h"
+#include <fields/has_fields.h>
+#include <fields/reflect/get_member_count.h>
+#include <fields/reflect/member_names.h>
 
 
 namespace fields
@@ -71,13 +71,35 @@ template<typename T, typename Function, size_t... Is>
     requires CanReflect<std::remove_cvref_t<T>>
 void ForEachImpl(T &&t, Function &&function, std::index_sequence<Is...>)
 {
-    static constexpr auto names = MemberNames<T>;
     auto &&members = GetMemberTuple(t);
     using Members = decltype(members);
 
-    (function(
-        std::get<Is>(names),
-        ForwardGet<Is>(std::forward<Members>(members))), ...);
+    static constexpr auto names = MemberNames<T>;
+
+    constexpr bool acceptsNames = (
+        std::is_invocable_v
+        <
+            Function &,
+            decltype(std::get<Is>(names)),
+
+            decltype(ForwardGet<Is>(
+                std::forward<Members>(members)))
+        > && ...
+    );
+
+    if constexpr (acceptsNames)
+    {
+        (function(
+            std::get<Is>(names),
+            ForwardGet<Is>(std::forward<Members>(members))), ...);
+    }
+    else
+    {
+        // Function only expects this member.
+
+        (function(
+            ForwardGet<Is>(std::forward<Members>(members))), ...);
+    }
 }
 
 
@@ -94,34 +116,68 @@ void ForEach(T &&t, Function &&function)
 }
 
 
-template<typename T, typename Function, size_t... Is>
-    requires CanReflect<std::remove_cvref_t<T>>
+template<typename Left, typename Right, typename Function, size_t... Is>
+    requires (
+        CanReflect<std::remove_cvref_t<Left>>
+        && CanReflect<std::remove_cvref_t<Right>>)
 void ForEachZipImpl(
-    T &&left,
-    T &&right,
+    Left &&left,
+    Right &&right,
     Function &&function, std::index_sequence<Is...>)
 {
-    static constexpr auto names = MemberNames<T>;
     auto &&leftMembers = GetMemberTuple(left);
     auto &&rightMembers = GetMemberTuple(right);
-    using Members = decltype(leftMembers);
+    using LeftMembers = decltype(leftMembers);
+    using RightMembers = decltype(rightMembers);
 
-    (function(
-        std::get<Is>(names),
-        ForwardGet<Is>(std::forward<Members>(leftMembers)),
-        ForwardGet<Is>(std::forward<Members>(rightMembers))), ...);
+    static constexpr auto names = MemberNames<Left>;
+
+    constexpr bool acceptsNames = (
+        std::is_invocable_v
+        <
+            Function &,
+            decltype(std::get<Is>(names)),
+
+            decltype(ForwardGet<Is>(
+                std::forward<LeftMembers>(leftMembers))),
+
+            decltype(ForwardGet<Is>(
+                std::forward<RightMembers>(rightMembers)))
+        > && ...
+    );
+
+    if constexpr (acceptsNames)
+    {
+        (function(
+            std::get<Is>(names),
+            ForwardGet<Is>(std::forward<LeftMembers>(leftMembers)),
+            ForwardGet<Is>(std::forward<RightMembers>(rightMembers))), ...);
+    }
+    else
+    {
+        // Function only expects the left and right members.
+
+        (function(
+            ForwardGet<Is>(std::forward<LeftMembers>(leftMembers)),
+            ForwardGet<Is>(std::forward<RightMembers>(rightMembers))), ...);
+    }
 }
 
 
-template<typename T, typename Function>
-    requires CanReflect<std::remove_cvref_t<T>>
-void ForEachZip(T &&left, T &&right, Function &&function)
+template<typename Left, typename Right, typename Function>
+    requires (
+        CanReflect<std::remove_cvref_t<Left>>
+        && CanReflect<std::remove_cvref_t<Right>>)
+void ForEachZip(Left &&left, Right &&right, Function &&function)
 {
-    static constexpr auto count = GetMemberCount<T>();
+    static constexpr auto count = GetMemberCount<Left>();
+    static_assert(
+        GetMemberCount<Right>() == count,
+        "Both left and right must have the same member count");
 
     ForEachZipImpl(
-        std::forward<T>(left),
-        std::forward<T>(right),
+        std::forward<Left>(left),
+        std::forward<Right>(right),
         std::forward<Function>(function),
         std::make_index_sequence<count>{});
 }
