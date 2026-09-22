@@ -14,6 +14,33 @@ namespace fields
 
 
 template<typename T>
+concept DefinesReflector = requires
+{
+    typename std::remove_cvref_t<T>::Reflector;
+};
+
+
+template<typename T, typename = void>
+struct GetReflectorImpl {};
+
+
+template<typename T>
+struct GetReflectorImpl
+<
+    T,
+    std::enable_if_t<DefinesReflector<T>>
+>
+{
+    using Type = std::remove_cvref_t<T>::Reflector;
+};
+
+
+template<typename T>
+using GetReflector = typename GetReflectorImpl<T>::Type;
+
+
+
+template<typename T>
 concept CanReflectImpl =
     std::is_aggregate_v<T>
     && !fields::HasFields<T>
@@ -26,25 +53,97 @@ concept CanReflectImpl =
     && (GetMemberCount<T>() < maximumReflectCount);
 
 
+template<typename T, typename = void>
+struct ReflectorTypeImpl
+{
+
+};
+
+
 template<typename T>
-concept CanReflect = CanReflectImpl<std::remove_cvref_t<T>>;
+struct ReflectorTypeImpl
+<
+    T,
+    std::enable_if_t<CanReflectImpl<T>>
+>
+{
+    using Type = T;
+};
+
+
+template<typename T>
+struct ReflectorTypeImpl
+<
+    T,
+    std::enable_if_t
+    <
+        DefinesReflector<T>
+        && CanReflectImpl<GetReflector<T>>
+    >
+>
+{
+    using Type = GetReflector<T>;
+};
+
+
+template<typename T>
+using ReflectorType = typename ReflectorTypeImpl<std::remove_cvref_t<T>>::Type;
+
+
+template<typename T>
+concept HasReflector = requires
+{
+    typename ReflectorType<T>;
+    requires !HasFields<T>;
+};
+
+
+template<typename T>
+concept CanReflect =
+    CanReflectImpl<std::remove_cvref_t<T>> || HasReflector<T>;
+
+
+template<typename T>
+    requires CanReflect<T>
+constexpr auto && ForwardReflector(T &&t)
+{
+    using Type = ReflectorType<T>;
+
+    using Base = std::conditional_t
+        <
+            std::is_const_v<std::remove_reference_t<T>>,
+            const Type,
+            Type
+        >;
+
+    using Reference = std::conditional_t
+        <
+            std::is_lvalue_reference_v<T>,
+            Base &,
+            Base &&
+        >;
+
+    return static_cast<Reference>(t);
+}
 
 
 template<CanReflect T>
 struct Reflect
 {
-    static constexpr auto count = GetMemberCount<T>();
+    using Type = ReflectorType<T>;
+
+    static constexpr auto count = GetMemberCount<Type>();
 
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundefined-var-template"
 #endif
-    using Members = decltype(GetMemberTuple(inspect<T>));
+    using Members = decltype(GetMemberTuple(inspect<Type>));
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
 
-    static constexpr auto names = MemberNames<T>;
+    static constexpr auto names = MemberNames<Type>;
 
     template<size_t I>
     using Element = std::remove_cvref_t<std::tuple_element_t<I, Members>>;
@@ -56,29 +155,29 @@ struct Reflect
 
 
 template<size_t Index, typename T>
-    requires CanReflect<std::remove_cvref_t<T>>
+    requires CanReflect<T>
 decltype(auto) GetMember(T &&t)
 {
-    return std::get<Index>(GetMemberTuple(std::forward<T>(t)));
+    return std::get<Index>(
+        GetMemberTuple(ForwardReflector<T>(std::forward<T>(t))));
 }
 
 
 template<size_t I, typename Tuple>
 decltype(auto) ForwardGet(Tuple &&tuple)
 {
-    using T = decltype(std::get<I>(tuple));
-    return std::forward<T>(std::get<I>(tuple));
+    return std::get<I>(std::forward<Tuple>(tuple));
 }
 
 
 template<typename T, typename Function, size_t... Is>
-    requires CanReflect<std::remove_cvref_t<T>>
+    requires CanReflect<T>
 void ForEachImpl(T &&t, Function &&function, std::index_sequence<Is...>)
 {
-    auto &&members = GetMemberTuple(t);
+    auto &&members = GetMemberTuple(ForwardReflector<T>(std::forward<T>(t)));
     using Members = decltype(members);
 
-    static constexpr auto names = MemberNames<T>;
+    static constexpr auto names = MemberNames<ReflectorType<T>>;
 
     constexpr bool acceptsNames = (
         std::is_invocable_v
@@ -108,29 +207,31 @@ void ForEachImpl(T &&t, Function &&function, std::index_sequence<Is...>)
 
 
 template<typename T, typename Function>
-    requires CanReflect<std::remove_cvref_t<T>>
+    requires CanReflect<T>
 void ForEach(T &&t, Function &&function)
 {
-    static constexpr auto count = GetMemberCount<T>();
+    static constexpr auto count = GetMemberCount<ReflectorType<T>>();
 
     ForEachImpl(
-        std::forward<T>(t),
+        ForwardReflector<T>(std::forward<T>(t)),
         std::forward<Function>(function),
         std::make_index_sequence<count>{});
 }
 
 
 template<typename Left, typename Right, typename Function, size_t... Is>
-    requires (
-        CanReflect<std::remove_cvref_t<Left>>
-        && CanReflect<std::remove_cvref_t<Right>>)
+    requires (CanReflect<Left> && CanReflect<Right>)
 void ForEachZipImpl(
     Left &&left,
     Right &&right,
     Function &&function, std::index_sequence<Is...>)
 {
-    auto &&leftMembers = GetMemberTuple(left);
-    auto &&rightMembers = GetMemberTuple(right);
+    auto &&leftMembers =
+        GetMemberTuple(ForwardReflector<Left>(std::forward<Left>(left)));
+
+    auto &&rightMembers =
+        GetMemberTuple(ForwardReflector<Right>(std::forward<Right>(right)));
+
     using LeftMembers = decltype(leftMembers);
     using RightMembers = decltype(rightMembers);
 
@@ -169,25 +270,24 @@ void ForEachZipImpl(
 
 
 template<typename Left, typename Right, typename Function>
-    requires (
-        CanReflect<std::remove_cvref_t<Left>>
-        && CanReflect<std::remove_cvref_t<Right>>)
+    requires (CanReflect<Left> && CanReflect<Right>)
 void ForEachZip(Left &&left, Right &&right, Function &&function)
 {
-    static constexpr auto count = GetMemberCount<Left>();
+    static constexpr auto count = GetMemberCount<ReflectorType<Left>>();
+
     static_assert(
-        GetMemberCount<Right>() == count,
+        GetMemberCount<ReflectorType<Right>>() == count,
         "Both left and right must have the same member count");
 
     ForEachZipImpl(
-        std::forward<Left>(left),
-        std::forward<Right>(right),
+        ForwardReflector<Left>(std::forward<Left>(left)),
+        ForwardReflector<Right>(std::forward<Right>(right)),
         std::forward<Function>(function),
         std::make_index_sequence<count>{});
 }
 
 
-template<typename T>
+template<CanReflect T>
 void PrintMemberTypes(std::ostream &output)
 {
     using Reflection = Reflect<T>;

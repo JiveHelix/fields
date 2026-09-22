@@ -53,7 +53,7 @@ namespace detail
     template<int precision, typename T>
     bool DoEqual(const T &value, const T &other)
     {
-        if constexpr (fields::HasFields<T>)
+        if constexpr (HasFields<T> || CanReflect<T>)
         {
             if constexpr (jive::HasMemberEqual<T>)
             {

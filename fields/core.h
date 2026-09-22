@@ -162,29 +162,6 @@ template<typename Field>
 using FieldType = typename std::remove_reference_t<Field>::Type;
 
 
-template <typename T, std::size_t... I>
-constexpr auto GetFields(
-        const T &object,
-        std::index_sequence<I...>)
-{
-    return std::tie(object.*(std::get<I>(T::fields).member)...);
-}
-
-
-template <typename T>
-constexpr auto GetFields(const T &object)
-{
-    static_assert(HasFields<T>, "Missing required fields tuple");
-
-    constexpr auto propertyCount =
-        std::tuple_size<decltype(T::fields)>::value;
-
-    return GetFields(
-        object,
-        std::make_index_sequence<propertyCount>{});
-}
-
-
 template<size_t Index, typename T>
     requires HasFields<std::remove_cvref_t<T>>
 decltype(auto) GetMember(T &&t)
