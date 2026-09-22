@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <string_view>
 #include <type_traits>
 #include "jive/to_integer.h"
 #include "jive/to_float.h"
@@ -23,7 +24,7 @@ namespace detail
 
 template<typename T>
 std::enable_if_t<std::is_arithmetic_v<T>, T>
-ToNumber(const std::string &value)
+ToNumber(std::string_view value)
 {
     if constexpr (std::is_integral_v<T>)
     {
@@ -32,6 +33,7 @@ ToNumber(const std::string &value)
     else
     {
         static_assert(std::is_floating_point_v<T>);
+
         return jive::ToFloat<T>(value);
     }
 }

@@ -14,6 +14,9 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include <functional>
+#include <string_view>
+#include <string>
 #include "jive/precise_string.h"
 #include "jive/numeric_string_compare.h"
 #include "fields/detail/marshal_detail.h"
@@ -56,7 +59,7 @@ public:
     using This = MarshalTemplate<Booleans>;
 
     using Map = std::map<
-        std::string,
+        std::string_view,
         std::unique_ptr<This>,
         jive::NumericStringCompare>;
 
@@ -122,9 +125,14 @@ public:
         return *this;
     }
 
-    size_t count(const std::string &name) const
+    size_t count(std::string_view name) const
     {
         return this->membersByName_.count(name);
+    }
+
+    bool contains(std::string_view name) const
+    {
+        return this->membersByName_.contains(name);
     }
 
     template<typename Key>

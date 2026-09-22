@@ -14,8 +14,8 @@ namespace fields
 
 
 template<typename T>
-concept CanReflect =
-    std::is_aggregate_v<std::remove_cvref_t<T>>
+concept CanReflectImpl =
+    std::is_aggregate_v<T>
     && !fields::HasFields<T>
     && !std::is_array_v<T>
     && !jive::IsArray<T>
@@ -24,6 +24,10 @@ concept CanReflect =
     && !jive::IsValueContainer<T>
     && (GetMemberCount<T>() > 0)
     && (GetMemberCount<T>() < maximumReflectCount);
+
+
+template<typename T>
+concept CanReflect = CanReflectImpl<std::remove_cvref_t<T>>;
 
 
 template<CanReflect T>
