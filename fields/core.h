@@ -80,6 +80,16 @@ template<typename T>
 concept IsFieldsTuple = IsFieldsTuple_<T>::value;
 
 
+template<typename T>
+concept Hidden = std::remove_reference_t<T>::fieldsHidden;
+
+template<typename T>
+using IsHidden = std::bool_constant<Hidden<T>>;
+
+
+template<typename T>
+concept CanInspect = HasFields<T> || CanReflect<T>;
+
 
 template<typename T, typename = void>
 struct ImplementsAfterFields_: std::false_type {};
@@ -268,7 +278,7 @@ Json UnstructureFromFields(const T &structured)
                 auto asVector = UnstructureArray(structured.*(field.member));
                 result[field.name] = Unstructure<Json>(asVector);
             }
-            else if constexpr (!std::is_empty_v<Type>)
+            else if constexpr (!std::is_empty_v<Type> && !Hidden<Type>)
             {
                 result[field.name] =
                     Unstructure<Json>(structured.*(field.member));
@@ -295,7 +305,7 @@ Json UnstructureFromFields(const T &structured, const Fields &fields)
                 auto asVector = UnstructureArray(structured.*(field.member));
                 result[field.name] = Unstructure<Json>(asVector);
             }
-            else if constexpr (!std::is_empty_v<Type>)
+            else if constexpr (!std::is_empty_v<Type> && !Hidden<Type>)
             {
                 result[field.name] =
                     Unstructure<Json>(structured.*(field.member));
@@ -315,14 +325,14 @@ Json UnstructureFromReflection(const T &structured)
         structured,
         [&result](const auto &name, const auto &member)
         {
-            using Type = decltype(member);
+            using Type = std::remove_cvref_t<decltype(member)>;
 
             if constexpr (std::is_array_v<Type>)
             {
                 auto asVector = UnstructureArray(member);
                 result[name] = Unstructure<Json>(asVector);
             }
-            else if constexpr (!std::is_empty_v<Type>)
+            else if constexpr (!std::is_empty_v<Type> && !Hidden<Type>)
             {
                 result[name] = Unstructure<Json>(member);
             }
@@ -422,6 +432,7 @@ const Json * FindMember(const Field &field, const Json &unstructured)
     }
 
     auto otherNames = field.otherNames;
+
     if constexpr (std::tuple_size<decltype(otherNames)>::value > 0)
     {
         std::optional<std::string> matchingName{};
@@ -487,14 +498,17 @@ T Restructure(const Json &unstructured)
         ForEachField<T>(
             [&](const auto &field) -> void
             {
-                auto unstructuredMember = FindMember(field, unstructured);
-
-                if (unstructuredMember)
+                if constexpr (!Hidden<decltype(result.*(field.member))>)
                 {
-                    // Reconstruct the object from the unstructured data.
-                    StructureInPlace(
-                        result.*(field.member),
-                        *unstructuredMember);
+                    auto unstructuredMember = FindMember(field, unstructured);
+
+                    if (unstructuredMember)
+                    {
+                        // Reconstruct the object from the unstructured data.
+                        StructureInPlace(
+                            result.*(field.member),
+                            *unstructuredMember);
+                    }
                 }
             });
     }
@@ -504,12 +518,15 @@ T Restructure(const Json &unstructured)
             result,
             [&unstructured](const auto &name, auto &member) -> void
             {
-                if (1 == unstructured.count(name))
+                if constexpr (!Hidden<decltype(member)>)
                 {
-                    // Reconstruct the object from the unstructured data.
-                    StructureInPlace(
-                        member,
-                        unstructured[name]);
+                    if (1 == unstructured.count(name))
+                    {
+                        // Reconstruct the object from the unstructured data.
+                        StructureInPlace(
+                            member,
+                            unstructured[name]);
+                    }
                 }
             });
     }

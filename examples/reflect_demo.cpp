@@ -87,6 +87,7 @@ struct Groot
 
     static constexpr auto fieldsTypeName = "Groot";
     static constexpr size_t precision = 3;
+    static constexpr bool fieldsNoPretty = true;
 };
 
 

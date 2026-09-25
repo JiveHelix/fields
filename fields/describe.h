@@ -19,8 +19,9 @@
 #include <jive/type_traits.h>
 #include <jive/optional.h>
 
-#include "fields/core.h"
-#include "fields/reflect.h"
+#include <fields/core.h>
+#include <fields/reflect.h>
+#include <fields/select.h>
 
 
 namespace jive
@@ -185,8 +186,7 @@ inline constexpr bool HasDoDescribe = HasDoDescribe_<T>::value;
 
 template<typename T>
 concept CanDescribe =
-    CanReflect<T>
-    || HasFields<T>
+    CanInspect<T>
     || HasDescribe<T>
     || HasDoDescribe<T>
     || jive::HasOutputStreamOperator<T>;
@@ -352,8 +352,6 @@ std::ostream & DescribeFields(
     const Style &style,
     int indent)
 {
-    constexpr auto itemCount = std::tuple_size<Fields>::value;
-
     jive::Colorize colorize(outputStream);
     colorize(style.colors.structure, jive::GetTypeName<Object>());
     outputStream << "(";
@@ -364,7 +362,8 @@ std::ostream & DescribeFields(
         fields,
         style,
         indent,
-        std::make_index_sequence<itemCount>{});
+        // Exlucde hidden membmers
+        SelectIndices<IsHidden>(object));
 
     return outputStream << ")";
 }
@@ -423,7 +422,8 @@ std::ostream & DescribeReflected(
         object,
         style,
         indent,
-        std::make_index_sequence<Reflection::count>{});
+        // Exclude hidden members:
+        SelectIndices<IsHidden>(object));
 
     return outputStream << ")";
 }

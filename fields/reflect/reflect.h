@@ -54,17 +54,21 @@ concept CanReflectImpl =
 
 
 template<typename T, typename = void>
-struct ReflectorTypeImpl
+struct DefaultReflectorTypeImpl
 {
 
 };
 
 
 template<typename T>
-struct ReflectorTypeImpl
+struct DefaultReflectorTypeImpl
 <
     T,
-    std::enable_if_t<CanReflectImpl<T>>
+    std::enable_if_t
+    <
+        !DefinesReflector<T>
+        && CanReflectImpl<T>
+    >
 >
 {
     using Type = T;
@@ -72,7 +76,7 @@ struct ReflectorTypeImpl
 
 
 template<typename T>
-struct ReflectorTypeImpl
+struct DefaultReflectorTypeImpl
 <
     T,
     std::enable_if_t
@@ -83,6 +87,16 @@ struct ReflectorTypeImpl
 >
 {
     using Type = GetReflector<T>;
+};
+
+
+// Define the default through inheritance.
+// Downstream libraries can specialize ReflectorTypeImpl without competeting
+// with the default behavior.
+template<typename T, typename = void>
+struct ReflectorTypeImpl: DefaultReflectorTypeImpl<T>
+{
+
 };
 
 
