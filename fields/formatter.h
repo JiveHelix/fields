@@ -5,16 +5,47 @@
 #include <string_view>
 #include <fields/has_fields.h>
 #include <fields/for_each.h>
+#include <fields/core.h>
 
 
 namespace fields
 {
 
 
+template<CanInspect T, typename = void>
+struct FirstFieldType_ {};
+
+
+template<CanInspect T>
+struct FirstFieldType_
+<
+    T,
+    std::enable_if_t<HasFields<T>>
+>
+{
+    using Type = typename std::tuple_element_t<0, decltype(T::fields)>::Type;
+};
+
+
+template<CanInspect T>
+struct FirstFieldType_
+<
+    T,
+    std::enable_if_t<CanReflect<T>>
+>
+{
+    using Type = Reflect<T>::template Element<0>;
+};
+
+
+template<CanInspect T>
+using FirstFieldType = typename FirstFieldType_<T>::Type;
+
+
 template
 <
-    HasFields T,
-    typename F = typename std::tuple_element_t<0, decltype(T::fields)>::Type
+    CanInspect T,
+    typename F = FirstFieldType<T>
 >
 struct Formatter
 {

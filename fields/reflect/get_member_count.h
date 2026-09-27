@@ -8,7 +8,7 @@ namespace fields
 {
 
 
-static constexpr size_t maximumReflectCount = 16;
+static constexpr size_t maximumReflectCount = 24;
 
 
 struct Probe
@@ -52,50 +52,19 @@ struct AggregateProbe
 
 template<class T, class... Args>
     requires(std::is_aggregate_v<std::remove_cvref_t<T>>)
-consteval std::size_t GetBaseMemberCount()
-{
-    using Plain = std::remove_cvref_t<T>;
-
-    if constexpr (requires { Plain{{ Args{}..., AggregateProbe{} }}; })
-    {
-        return GetBaseMemberCount<Plain, Args..., AggregateProbe>();
-    }
-    else if constexpr (requires { Plain{{ Args{}..., Probe{} }}; })
-    {
-        return GetBaseMemberCount<Plain, Args..., Probe>();
-    }
-    else
-    {
-        return sizeof...(Args);
-    }
-}
-
-
-template<class T, class... Args>
-    requires(std::is_aggregate_v<std::remove_cvref_t<T>>)
 consteval std::size_t GetMemberCount()
 {
     using Plain = std::remove_cvref_t<T>;
 
     if constexpr (requires { Plain{ Args{}..., AggregateProbe{} }; })
     {
+        // The member at this position is an aggregate type.
         return GetMemberCount<Plain, Args..., AggregateProbe>();
     }
     else if constexpr (requires { Plain{ Args{}..., Probe{} }; })
     {
+        // The member at this position is not an aggregate type.
         return GetMemberCount<Plain, Args..., Probe>();
-    }
-    else if constexpr (sizeof...(Args) == 1)
-    {
-        if constexpr (requires { Plain{ AggregateProbe{} }; })
-        {
-            // Open up the base class
-            return GetBaseMemberCount<Plain>();
-        }
-        else
-        {
-            return 1;
-        }
     }
     else
     {

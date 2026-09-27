@@ -13,7 +13,7 @@ template
     typename Target,
     typename Source
 >
-void AssignConvert(Target &target, Source &source)
+void AssignConvert(Target &target, Source &&source)
 {
     if constexpr (HasFields<Target> && HasFields<Source>)
     {
@@ -26,7 +26,8 @@ void AssignConvert(Target &target, Source &source)
 
             // Convert the source member to the Target member type prior to
             // assignment.
-            target.*(targetField.member) = Type(source.*(sourceField.member));
+            target.*(targetField.member) =
+                Type(source.*(sourceField.member));
         };
 
         jive::ZipApply(initializer, Target::fields, Source::fields);
@@ -35,7 +36,7 @@ void AssignConvert(Target &target, Source &source)
     {
         auto initializer = [](
             auto &targetMember,
-            const auto &sourceMember) -> void
+            auto &&sourceMember) -> void
         {
             using Type = std::remove_reference_t<decltype(targetMember)>;
 

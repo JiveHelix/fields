@@ -45,12 +45,12 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
         int z;
     };
 
-    struct DerivedMemberTest: public BaseMemberTest
+    struct DerivedMemberTest
     {
-
+        BaseMemberTest onlyOneMember;
     };
 
-    STATIC_REQUIRE(fields::GetMemberCount<DerivedMemberTest>() == 3);
+    STATIC_REQUIRE(fields::GetMemberCount<DerivedMemberTest>() == 1);
 
 
     struct Base
@@ -68,12 +68,15 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
 
     struct Derived: public Base
     {
-
+        using Reflector = Base;
     };
 
 
     STATIC_REQUIRE(fields::GetMemberCount<Base>() == 2);
-    STATIC_REQUIRE(fields::GetMemberCount<Derived>() == 2);
+
+    STATIC_REQUIRE(
+        fields::GetMemberCount<fields::ReflectorType<Derived>>() == 2);
+
     STATIC_REQUIRE(fields::GetMemberCount<Container>() == 3);
 
     struct B { std::array<int,2> a; int k; };

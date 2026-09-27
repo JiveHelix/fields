@@ -50,7 +50,7 @@ concept CanReflectImpl =
     && !jive::IsOptional<T>
     && !jive::IsValueContainer<T>
     && (GetMemberCount<T>() > 0)
-    && (GetMemberCount<T>() < maximumReflectCount);
+    && (GetMemberCount<T>() <= maximumReflectCount);
 
 
 template<typename T, typename = void>
