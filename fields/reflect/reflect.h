@@ -39,6 +39,26 @@ template<typename T>
 using GetReflector = typename GetReflectorImpl<T>::Type;
 
 
+template<typename T>
+constexpr bool CheckMemberCountIsOkay()
+{
+    if constexpr (!HasFields<T>)
+    {
+        // We must use reflection to inspect the members.
+        // Check the member count.
+
+        constexpr auto memberCount = GetMemberCount<T>();
+
+        return (memberCount > 0) && (memberCount <= maximumReflectCount);
+    }
+    else
+    {
+        // fields can specify as many members as necessary.
+        return true;
+    }
+}
+
+
 
 template<typename T>
 concept CanReflectImpl =
@@ -49,8 +69,7 @@ concept CanReflectImpl =
     && !std::is_pointer_v<T>
     && !jive::IsOptional<T>
     && !jive::IsValueContainer<T>
-    && (GetMemberCount<T>() > 0)
-    && (GetMemberCount<T>() <= maximumReflectCount);
+    && CheckMemberCountIsOkay<T>();
 
 
 template<typename T, typename = void>
