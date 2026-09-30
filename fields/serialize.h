@@ -23,7 +23,7 @@ Object FromJson(const std::string &asString)
 template<typename Object>
 std::string ToJson(const Object &object)
 {
-    auto unstructured = Unstructure<nlohmann::json>(object);
+    auto unstructured = Unstructure<nlohmann::ordered_json>(object);
     return unstructured.dump(4);
 }
 
