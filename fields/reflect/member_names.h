@@ -147,20 +147,32 @@ struct MemberName_
     static constexpr auto end = pretty.find(PrettyField::tail);
 
 #if defined(GCC_COMPILER) && !defined(_MSC_VER)
-    static constexpr auto nameOffset =
+    static_assert(end != std::string_view::npos);
+    static constexpr auto separator = pretty.rfind("::", end);
+    static_assert(separator != std::string_view::npos);
+
+    static constexpr auto nameOffset = separator + 2;
+#if 0
         PrettyField::nameOffset
         - PrettyField::extraStructNameOffset
         + (2 * jive::detail::TypeName<T>().size())
         - PrettyField::extraTypeNameOffset
         + jive::detail::TypeName<Pointer<MemberType<index, T>>>().size();
+#endif
 #elif defined(_MSC_VER)
-    static constexpr auto nameOffset =
+    static_assert(end != std::string_view::npos);
+    static constexpr auto separator = pretty.rfind("->", end);
+    static_assert(separator != std::string_view::npos);
+
+    static constexpr auto nameOffset = separator + 2;
+#if 0
         PrettyField::nameOffset
         - PrettyField::extraStructNameOffset
         + jive::detail::TypeName<T>().size()
         - PrettyField::extraTypeNameOffset
         + jive::detail::TypeName<Pointer<MemberType<index, T>>>().size()
         + jive::detail::TypeName<MemberType<index, T>>().size();
+#endif
 #else
     static constexpr auto nameOffset = PrettyField::nameOffset;
 #endif
