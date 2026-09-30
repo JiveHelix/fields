@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <fields/core.h>
+#include <fields/reflect/reflect_traits.h>
 
 
 namespace fields
@@ -13,18 +13,18 @@ namespace detail
 
 
 /**
-// Build up a list of indices to fields that meet our criterion.
-// Called initially with only three template arguments.
-// On the first pass, the last field is checked for inclusion, and added to
-// the pack of size_t as the last template argument if it is not empty.
-// Otherwise, this method is called again with the penultimate field, and
-// so on.
-// When Count reaches 0, we have considered all of the fields, and can
-// return the final index_sequence.
+    Build up a list of indices to fields that meet our criterion.
+    Called initially with only three template arguments.
+    On the first pass, the last field is checked for inclusion, and added to
+    the pack of size_t as the last template argument if it is not empty.
+    Otherwise, this method is called again with the penultimate field, and
+    so on.
+    When Count reaches 0, we have considered all of the fields, and can
+    return the final index_sequence.
 **/
 template
 <
-    template<typename> typename Exclude,
+    template<typename, size_t> typename Exclude,
     typename T,
     typename Fields,
     size_t Count,
@@ -43,10 +43,9 @@ constexpr auto SelectFields(const T &object, const Fields &fields)
                 decltype(object.*(std::get<Count - 1>(fields).member))
             >;
 
-        if constexpr (Exclude<MemberType>::value)
+        if constexpr (Exclude<MemberType, Count - 1>::value)
         {
-            // Empty types do not participate in comparisons.
-            // Skip this field.
+            // Exclude this field.
             return SelectFields<Exclude, T, Fields, Count - 1, I...>(
                 object,
                 fields);
@@ -63,7 +62,7 @@ constexpr auto SelectFields(const T &object, const Fields &fields)
 
 template
 <
-    template<typename> typename Exclude,
+    template<typename, size_t> typename Exclude,
     typename T,
     typename Reflection,
     size_t Count,
@@ -79,11 +78,18 @@ constexpr auto SelectMembers(const T &object)
     {
         using MemberType = typename Reflection::template Element<Count - 1>;
 
-        if constexpr (Exclude<MemberType>::value)
+        if constexpr (Exclude<MemberType, Count - 1>::value)
         {
             // Empty types do not participate in comparisons.
             // Skip this field.
-            return SelectMembers<Exclude, T, Reflection, Count - 1, Is...>(object);
+            return SelectMembers
+                <
+                    Exclude,
+                    T,
+                    Reflection,
+                    Count - 1,
+                    Is...
+                >(object);
         }
         else
         {
@@ -107,7 +113,7 @@ constexpr auto SelectMembers(const T &object)
 
 template
 <
-    template<typename> typename Exclude,
+    template<typename, size_t> typename Exclude,
     CanInspect T
 >
 constexpr auto SelectIndices(const T &object)

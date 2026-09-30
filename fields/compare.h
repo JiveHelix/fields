@@ -278,12 +278,27 @@ constexpr auto ComparisonTuple(
 }
 
 
+template<typename T>
+struct ExcludeCompare
+{
+    template<typename Member, size_t Index>
+    using DoExcludeHidden = ExcludeHidden<T>::template Exclude<Member, Index>;
+
+    template<typename Member, size_t Index>
+    struct Exclude
+    {
+        static constexpr bool value = std::is_empty_v<Member>
+            || DoExcludeHidden<Member, Index>::value;
+    };
+};
+
+
 template<CanInspect T>
 constexpr auto ComparisonTuple(const T &object)
 {
     return ComparisonTuple<detail::Precision<T>::value>(
         object,
-        SelectIndices<std::is_empty>(object));
+        SelectIndices<ExcludeCompare<T>::template Exclude>(object));
 }
 
 template<int precision, CanInspect T>
@@ -291,7 +306,7 @@ constexpr auto PrecisionCompare(const T &object)
 {
     return ComparisonTuple<precision>(
         object,
-        SelectIndices<std::is_empty>(object));
+        SelectIndices<ExcludeCompare<T>::template Exclude>(object));
 }
 
 

@@ -22,6 +22,7 @@
 #include <fields/core.h>
 #include <fields/reflect.h>
 #include <fields/select.h>
+#include <fields/hidden.h>
 
 
 namespace jive
@@ -362,8 +363,11 @@ std::ostream & DescribeFields(
         fields,
         style,
         indent,
-        // Exlucde hidden membmers
-        SelectIndices<IsHidden>(object));
+        // Exclude hidden membmers
+        SelectIndices
+        <
+            ExcludeHidden<Object>::template Exclude
+        >(object));
 
     return outputStream << ")";
 }
@@ -423,7 +427,10 @@ std::ostream & DescribeReflected(
         style,
         indent,
         // Exclude hidden members:
-        SelectIndices<IsHidden>(object));
+        SelectIndices
+        <
+            ExcludeHidden<Object>::template Exclude
+        >(object));
 
     return outputStream << ")";
 }
