@@ -30,16 +30,16 @@ template
     IsHide HideType
 >
     requires (CanReflect<T>)
-constexpr bool GetIsMemberHidden(const HideType &hidden)
+consteval bool GetIsMemberHidden(const HideType &hidden)
 {
     using Reflector = ReflectorType<T>;
 
     static_assert(
-        jive::ConstexprDefaultConstructible<Reflector>,
+        jive::ConstevalDefaultConstructible<Reflector>,
         "ReflectorType<T> must be constexpr default constructible. "
         "One or more reflected members cannot be constructed at compile time.");
 
-    constexpr Reflector object{};
+    Reflector object{};
     const auto &member = std::get<index>(GetMemberTuple(object));
     const auto memberPointer = &member;
     using Member = std::remove_cvref_t<decltype(member)>;

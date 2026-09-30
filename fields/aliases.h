@@ -25,16 +25,16 @@ template
     size_t index,
     IsField FieldType
 >
-constexpr bool GetIsMemberField(const FieldType &field)
+consteval bool GetIsMemberField(const FieldType &field)
 {
     using Reflector = ReflectorType<T>;
 
     static_assert(
-        jive::ConstexprDefaultConstructible<Reflector>,
+        jive::ConstevalDefaultConstructible<Reflector>,
         "ReflectorType<T> must be constexpr default constructible. "
         "One or more reflected members cannot be constructed at compile time.");
 
-    constexpr Reflector object{};
+    Reflector object{};
     const auto &member = std::get<index>(GetMemberTuple(object));
     const auto memberPointer = &member;
 
