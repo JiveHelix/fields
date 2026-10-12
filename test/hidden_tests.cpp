@@ -29,9 +29,31 @@ struct WithHidden
 DECLARE_EQUALITY_OPERATORS(WithHidden);
 
 
-TEST_CASE("Class with hidden fields tuple HasHidden", "[hidden]")
+struct WithIndexHidden
 {
-    STATIC_REQUIRE(fields::HasHidden<WithHidden>);
+    int x;
+    int y;
+    int z;
+
+    std::string hideMe;
+    double alsoHidden;
+
+    static constexpr auto hidden = std::make_tuple(
+        fields::IndexHide<3>{},
+        fields::IndexHide<4>{});
+};
+
+
+DECLARE_EQUALITY_OPERATORS(WithIndexHidden);
+
+
+TEMPLATE_TEST_CASE(
+    "Class with hidden fields tuple HasHidden",
+    "[hidden]",
+    WithHidden,
+    WithIndexHidden)
+{
+    STATIC_REQUIRE(fields::HasHidden<TestType>);
 }
 
 
@@ -70,11 +92,15 @@ TEST_CASE(
 #include <iostream>
 
 
-TEST_CASE("Hidden fields are not used in json output", "[hidden]")
+TEMPLATE_TEST_CASE(
+    "Hidden fields are not used in json output",
+    "[hidden]",
+    WithHidden,
+    WithIndexHidden)
 {
-    WithHidden withHidden{1, 2, 3, "I'm hidden", 3.14};
+    TestType withHidden{1, 2, 3, "I'm hidden", 3.14};
 
-    STATIC_REQUIRE(fields::HasHidden<WithHidden>);
+    STATIC_REQUIRE(fields::HasHidden<TestType>);
 
     auto asJson = fields::Unstructure<nlohmann::json>(withHidden);
 
@@ -89,14 +115,18 @@ TEST_CASE("Hidden fields are not used in json output", "[hidden]")
 }
 
 
-TEST_CASE("Hidden fields are not used from json input.", "[hidden]")
+TEMPLATE_TEST_CASE(
+    "Hidden fields are not used from json input.",
+    "[hidden]",
+    WithHidden,
+    WithIndexHidden)
 {
-    WithHidden withHidden{1, 2, 3, "I'm hidden", 3.14};
+    TestType withHidden{1, 2, 3, "I'm hidden", 3.14};
     auto asJson = fields::Unstructure<nlohmann::json>(withHidden);
 
     asJson["alsoHidden"] = -1.0;
 
-    auto recovered = fields::Restructure<WithHidden>(asJson);
+    auto recovered = fields::Restructure<TestType>(asJson);
 
     // Normal fields are restructured.
     REQUIRE(recovered.x == 1);
@@ -131,12 +161,59 @@ struct WithHiddenAndFields
 };
 
 
-TEST_CASE("Test Hidden json output with explicit fields.", "[hidden]")
+struct WithIndexedHiddenAndFields
 {
-    WithHiddenAndFields withHidden{1, 2, 3, "I'm hidden", 3.14};
+    int x;
+    int y;
+    int z;
+    std::string hideMe;
+    double alsoHidden;
 
-    STATIC_REQUIRE(fields::HasHidden<WithHiddenAndFields>);
-    STATIC_REQUIRE(fields::HasFields<WithHiddenAndFields>);
+    static constexpr auto fields = std::make_tuple(
+        fields::IndexField<0>("x"),
+        fields::IndexField<1>("y"),
+        fields::IndexField<2>("z"),
+        fields::IndexField<3>("hideMe"),
+        fields::IndexField<4>("alsoHidden"));
+
+    static constexpr auto hidden = std::make_tuple(
+        fields::IndexHide<3>{},
+        fields::IndexHide<4>{});
+};
+
+
+struct WithMixedHiddenAndFields
+{
+    int x;
+    int y;
+    int z;
+    std::string hideMe;
+    double alsoHidden;
+
+    static constexpr auto fields = std::make_tuple(
+        fields::IndexField<0>("x"),
+        fields::IndexField<1>("y"),
+        fields::Field(&WithMixedHiddenAndFields::z, "z"),
+        fields::Field(&WithMixedHiddenAndFields::hideMe, "hideMe"),
+        fields::IndexField<4>("alsoHidden"));
+
+    static constexpr auto hidden = std::make_tuple(
+        fields::IndexHide<3>{},
+        fields::Hide(&WithMixedHiddenAndFields::alsoHidden));
+};
+
+
+TEMPLATE_TEST_CASE(
+    "Test Hidden json output with explicit fields.",
+    "[hidden]",
+    WithHiddenAndFields,
+    WithIndexedHiddenAndFields,
+    WithMixedHiddenAndFields)
+{
+    TestType withHidden{1, 2, 3, "I'm hidden", 3.14};
+
+    STATIC_REQUIRE(fields::HasHidden<TestType>);
+    STATIC_REQUIRE(fields::HasFields<TestType>);
 
     auto asJson = fields::Unstructure<nlohmann::json>(withHidden);
 
@@ -151,14 +228,19 @@ TEST_CASE("Test Hidden json output with explicit fields.", "[hidden]")
 }
 
 
-TEST_CASE("Test Hidden json input with explicit fields.", "[hidden]")
+TEMPLATE_TEST_CASE(
+    "Test Hidden json input with explicit fields.",
+    "[hidden]",
+    WithHiddenAndFields,
+    WithIndexedHiddenAndFields,
+    WithMixedHiddenAndFields)
 {
-    WithHiddenAndFields withHidden{1, 2, 3, "I'm hidden", 3.14};
+    TestType withHidden{1, 2, 3, "I'm hidden", 3.14};
     auto asJson = fields::Unstructure<nlohmann::json>(withHidden);
 
     asJson["alsoHidden"] = -1.0;
 
-    auto recovered = fields::Restructure<WithHiddenAndFields>(asJson);
+    auto recovered = fields::Restructure<TestType>(asJson);
 
     // Normal fields are restructured.
     REQUIRE(recovered.x == 1);
@@ -172,11 +254,15 @@ TEST_CASE("Test Hidden json input with explicit fields.", "[hidden]")
 }
 
 
-TEST_CASE("Hidden fields are not used in comparisons", "[hidden]")
+TEMPLATE_TEST_CASE(
+    "Hidden fields are not used in comparisons",
+    "[hidden]",
+    WithHidden,
+    WithIndexHidden)
 {
-    WithHidden withHidden{1, 2, 3, "I'm hidden", 3.14};
-    WithHidden anotherWithHidden{1, 2, 3, "So am I", 3.14};
+    TestType withHidden{1, 2, 3, "I'm hidden", 3.14};
+    TestType anotherWithHidden{1, 2, 3, "So am I", 3.14};
 
-    STATIC_REQUIRE(fields::HasHidden<WithHidden>);
+    STATIC_REQUIRE(fields::HasHidden<TestType>);
     REQUIRE(withHidden == anotherWithHidden);
 }

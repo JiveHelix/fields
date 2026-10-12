@@ -79,7 +79,6 @@ constexpr bool CheckMemberCountIsOkay()
 template<typename T>
 concept CanReflectImpl =
     std::is_aggregate_v<T>
-    && !fields::HasFields<T>
     && !std::is_array_v<T>
     && !jive::IsArray<T>
     && !std::is_pointer_v<T>
@@ -150,7 +149,12 @@ concept HasReflector = requires
 
 template<typename T>
 concept CanReflect =
-    CanReflectImpl<std::remove_cvref_t<T>> || HasReflector<T>;
+    CanReflectImpl<std::remove_cvref_t<T>>
+    || HasReflector<std::remove_cvref_t<T>>;
+
+
+template<typename T>
+concept MustReflect = CanReflect<T> && !HasFields<T>;
 
 
 template<typename T>

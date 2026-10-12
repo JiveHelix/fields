@@ -25,9 +25,38 @@ struct WithAliases
 };
 
 
+struct WithIndexedAliases
+{
+    int x;
+    int y;
+    int z;
+    std::string p;
+
+    static constexpr auto aliases = std::make_tuple(
+        fields::IndexField<0>("this is x"),
+        fields::IndexField<2>("this is z"));
+};
+
+
+struct WithMixedAliases
+{
+    int x;
+    int y;
+    int z;
+    std::string p;
+
+    static constexpr auto aliases = std::make_tuple(
+        fields::Field(&WithMixedAliases::x, "this is x"),
+        fields::IndexField<2>("this is z"));
+};
+
+
 TEST_CASE("Class with aliases fields tuple HasAliases", "[aliases]")
 {
     STATIC_REQUIRE(fields::HasAliases<WithAliases>);
+    STATIC_REQUIRE(fields::IsField<decltype(fields::IndexField<0>("foo"))>);
+    STATIC_REQUIRE(fields::HasAliases<WithIndexedAliases>);
+    STATIC_REQUIRE(fields::HasAliases<WithMixedAliases>);
 }
 
 
@@ -95,11 +124,16 @@ TEST_CASE("Compare class member pointers.", "[fields]")
 }
 
 
-TEST_CASE("Aliases are used in json output", "[aliases]")
+TEMPLATE_TEST_CASE(
+    "Aliases are used in json output",
+    "[aliases]",
+    WithAliases,
+    WithIndexedAliases,
+    WithMixedAliases)
 {
-    WithAliases withAliases{1, 2, 3, "p"};
+    TestType withAliases{1, 2, 3, "p"};
 
-    STATIC_REQUIRE(fields::HasAliases<WithAliases>);
+    STATIC_REQUIRE(fields::HasAliases<TestType>);
 
     auto asJson = fields::Unstructure<nlohmann::json>(withAliases);
 
@@ -108,17 +142,23 @@ TEST_CASE("Aliases are used in json output", "[aliases]")
     REQUIRE(asJson.count("y") == 1);
 }
 
+
 #include <iostream>
 
-TEST_CASE("Reflected and alias names can be used on json input.", "[aliases]")
+TEMPLATE_TEST_CASE(
+    "Reflected and alias names can be used on json input.",
+    "[aliases]",
+    WithAliases,
+    WithIndexedAliases,
+    WithMixedAliases)
 {
-    WithAliases withAliases{1, 2, 3, "p"};
+    TestType withAliases{1, 2, 3, "p"};
     auto asJson = fields::Unstructure<nlohmann::json>(withAliases);
 
     asJson.erase("this is x");
     asJson["x"] = 42;
 
-    auto recovered = fields::Restructure<WithAliases>(asJson);
+    auto recovered = fields::Restructure<TestType>(asJson);
 
     REQUIRE(recovered.x == 42);
     REQUIRE(recovered.y == 2);
@@ -140,15 +180,31 @@ struct WithOtherNames
 };
 
 
-TEST_CASE("Alternate names can be used.", "[aliases]")
+struct WithIndexedOtherNames
 {
-    WithOtherNames withOtherNames{1, 2, 3};
+    int x;
+    int y;
+    int z;
+
+    static constexpr auto aliases = std::make_tuple(
+        fields::IndexField(fields::Index<0>{}, "this is x", "foo"),
+        fields::IndexField<2>("this is z"));
+};
+
+
+TEMPLATE_TEST_CASE(
+    "Alternate names can be used.",
+    "[aliases]",
+    WithOtherNames,
+    WithIndexedOtherNames)
+{
+    TestType withOtherNames{1, 2, 3};
     auto asJson = fields::Unstructure<nlohmann::json>(withOtherNames);
 
     asJson.erase("this is x");
     asJson["x"] = 42;
 
-    auto recovered = fields::Restructure<WithOtherNames>(asJson);
+    auto recovered = fields::Restructure<TestType>(asJson);
 
     REQUIRE(recovered.x == 42);
     REQUIRE(recovered.y == 2);
@@ -157,7 +213,7 @@ TEST_CASE("Alternate names can be used.", "[aliases]")
     asJson.erase("x");
     asJson["foo"] = 101;
 
-    auto recoveredWithFoo = fields::Restructure<WithOtherNames>(asJson);
+    auto recoveredWithFoo = fields::Restructure<TestType>(asJson);
 
     REQUIRE(recoveredWithFoo.x == 101);
     REQUIRE(recoveredWithFoo.y == 2);
@@ -166,10 +222,3 @@ TEST_CASE("Alternate names can be used.", "[aliases]")
     std::cout << "recovered: " << fields::Describe(recoveredWithFoo)
         << std::endl;
 }
-
-
-#if 0
-TODO: Create IsFieldsTuple ignores to skip reflected members on output to json or logging.
-
-TODO: DescribeReflected needs to know about FieldNames.
-#endif

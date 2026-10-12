@@ -23,7 +23,7 @@ template
 <
     CanReflect T,
     size_t index,
-    IsField FieldType
+    IsAddressField FieldType
 >
 consteval bool GetIsMemberField(const FieldType &field)
 {
@@ -54,7 +54,19 @@ consteval bool GetIsMemberField(const FieldType &field)
 template
 <
     CanReflect T,
-    IsField FieldType,
+    size_t index,
+    IsIndexField FieldType
+>
+consteval bool GetIsMemberField(const FieldType &field)
+{
+    return index == field.index;
+}
+
+
+template
+<
+    CanReflect T,
+    IsAddressField FieldType,
     typename Member
 >
 constexpr bool GetIsMemberField(

@@ -99,8 +99,8 @@ struct Formatter
         else
         {
             static_assert(
-                CanReflect<T>,
-                "CanInspect tests HasFields or CanReflect");
+                MustReflect<T>,
+                "CanInspect tests HasFields or MustReflect");
 
             ForEach(
                 canInspect,

@@ -44,4 +44,11 @@ inline std::string FileToString(const std::string &fileName)
 }
 
 
+template<typename Object>
+Object FromFile(const std::string &fileName)
+{
+    return FromJson<Object>(FileToString(fileName));
+}
+
+
 } // end namespace fields

@@ -268,7 +268,7 @@ constexpr auto ComparisonTuple(
 }
 
 
-template<int precision, CanReflect T, std::size_t... I>
+template<int precision, MustReflect T, std::size_t... I>
 constexpr auto ComparisonTuple(
         const T &object,
         std::index_sequence<I...>)

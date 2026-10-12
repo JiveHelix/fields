@@ -81,8 +81,8 @@ struct CompareWithOptional
 
 static_assert(fields::HasFields<CompareWithOptional>);
 
-static_assert(!fields::CanReflect<std::optional<ImplicitPrecision>>);
-static_assert(!fields::CanReflect<CompareWithOptional>);
+static_assert(!fields::MustReflect<std::optional<ImplicitPrecision>>);
+static_assert(!fields::MustReflect<CompareWithOptional>);
 
 DECLARE_EQUALITY_OPERATORS(CompareWithOptional)
 DECLARE_OUTPUT_STREAM_OPERATOR(CompareWithOptional)

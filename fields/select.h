@@ -40,7 +40,7 @@ constexpr auto SelectFields(const T &object, const Fields &fields)
     {
         using MemberType = typename std::remove_reference_t
             <
-                decltype(object.*(std::get<Count - 1>(fields).member))
+                decltype(GetMember(std::get<Count - 1>(fields), object))
             >;
 
         if constexpr (Exclude<MemberType, Count - 1>::value)
@@ -129,7 +129,7 @@ constexpr auto SelectIndices(const T &object)
     }
     else
     {
-        static_assert(CanReflect<T>);
+        static_assert(MustReflect<T>);
 
         using Reflection = Reflect<T>;
 

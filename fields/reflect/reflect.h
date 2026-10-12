@@ -15,7 +15,9 @@ namespace fields
 
 
 template<typename T>
-    requires CanReflect<T>
+    requires(
+        CanReflectImpl<std::remove_cvref_t<T>>
+        || HasReflector<std::remove_cvref_t<T>>)
 constexpr auto && ForwardReflector(T &&t)
 {
     using Type = ReflectorType<T>;
@@ -38,7 +40,7 @@ constexpr auto && ForwardReflector(T &&t)
 }
 
 
-template<CanReflect T>
+template<CanInspect T>
 struct Reflect
 {
     using Type = ReflectorType<T>;

@@ -38,6 +38,46 @@ struct Field
 };
 
 
+template<size_t I>
+using Index = std::integral_constant<size_t, I>;
+
+
+template<size_t I, typename... OtherNames>
+struct IndexField
+{
+    static constexpr size_t index = I;
+
+    constexpr IndexField()
+        :
+        otherNames{}
+    {
+
+    }
+
+    constexpr IndexField(std::string_view inName)
+        :
+        name{inName},
+        otherNames{}
+    {
+
+    }
+
+    constexpr IndexField(
+        Index<I>,
+        std::string_view inName,
+        OtherNames ...inOtherNames)
+        :
+        name{inName},
+        otherNames{inOtherNames...}
+    {
+
+    }
+
+    std::string_view name;
+    std::tuple<OtherNames...> otherNames;
+};
+
+
 template<typename... OtherNames>
 struct FieldNames
 {
@@ -91,16 +131,34 @@ struct Hide
 };
 
 
-template<typename T>
-struct IsField_: std::false_type {};
+template<size_t I>
+struct IndexHide
+{
+    static constexpr size_t index = I;
+};
 
+
+template<typename T>
+struct IsAddressField_: std::false_type {};
 
 template<typename Class, typename T, typename... OtherNames>
-struct IsField_<Field<Class, T, OtherNames...>>: std::true_type {};
+struct IsAddressField_<Field<Class, T, OtherNames...>>: std::true_type {};
+
+template<typename T>
+concept IsAddressField = IsAddressField_<T>::value;
+
+template<typename T>
+struct IsIndexField_: std::false_type {};
+
+template<size_t index, typename... OtherNames>
+struct IsIndexField_<IndexField<index, OtherNames...>>: std::true_type {};
+
+template<typename T>
+concept IsIndexField = IsIndexField_<T>::value;
 
 
 template<typename T>
-concept IsField = IsField_<T>::value;
+concept IsField = IsIndexField<T> || IsAddressField<T>;
 
 
 template<typename T>
@@ -128,15 +186,31 @@ concept IsFieldsTuple = IsFieldsTuple_<std::remove_cvref_t<T>>::value;
 
 
 template<typename T>
-struct IsHide_: std::false_type {};
+struct IsAddressHide_: std::false_type {};
 
 
 template<typename Class, typename T>
-struct IsHide_<Hide<Class, T>>: std::true_type {};
+struct IsAddressHide_<Hide<Class, T>>: std::true_type {};
 
 
 template<typename T>
-concept IsHide = IsHide_<T>::value;
+concept IsAddressHide = IsAddressHide_<T>::value;
+
+
+template<typename T>
+struct IsIndexHide_: std::false_type {};
+
+
+template<size_t I>
+struct IsIndexHide_<IndexHide<I>>: std::true_type {};
+
+
+template<typename T>
+concept IsIndexHide = IsIndexHide_<T>::value;
+
+
+template<typename T>
+concept IsHide = IsAddressHide<T> || IsIndexHide<T>;
 
 
 template<typename T>

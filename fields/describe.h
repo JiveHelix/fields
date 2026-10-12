@@ -318,8 +318,8 @@ std::ostream & DescribeFields(
     (
         (outputStream << (I == 0 ? "" : ", ") <<
             /* Recursively wrap each member in Describe */
-            Describe<FieldElementType<I, Fields>>(
-                object.*(std::get<I>(fields).member),
+            Describe<FieldElementType<Object, I>>(
+                GetMember(std::get<I>(fields), object),
                 DecorateName{}(std::get<I>(fields).name),
                 (indent < 0 || NoPretty<Object>)
                     ? -1
@@ -375,7 +375,7 @@ std::ostream & DescribeFields(
 
 template
 <
-    CanReflect Object,
+    MustReflect Object,
     typename Reflection,
     typename DecorateName,
     std::size_t... I
@@ -406,7 +406,7 @@ std::ostream & DescribeReflected(
 
 template
 <
-    CanReflect Object,
+    MustReflect Object,
     typename DecorateName = DefaultNameDecorator
 >
 std::ostream & DescribeReflected(
@@ -616,7 +616,7 @@ public:
                 this->style_,
                 this->indent_);
         }
-        else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+        else if constexpr (!jive::IsArray<T> && MustReflect<T>)
         {
             DescribeReflected(
                 outputStream,

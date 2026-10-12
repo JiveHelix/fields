@@ -20,7 +20,7 @@ void Write(std::ostream &output, const T &value)
                 Write(output, value.*(field.member));
             });
     }
-    else if constexpr (CanReflect<T>)
+    else if constexpr (MustReflect<T>)
     {
         ForEach(
             value,
@@ -52,7 +52,7 @@ T Read(std::istream &input)
 
         return result;
     }
-    else if constexpr (CanReflect<T>)
+    else if constexpr (MustReflect<T>)
     {
         T result{};
 

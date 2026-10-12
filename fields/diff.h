@@ -162,7 +162,7 @@ std::optional<Json> DiffFromFields(const T &structured, const T &compare)
 }
 
 
-template<typename Json, CanReflect T>
+template<typename Json, MustReflect T>
 std::optional<Json> DiffFromReflection(const T &structured, const T &compare)
 {
     Json result;
@@ -217,7 +217,7 @@ std::optional<Json> Diff(const T &structured, const T &compare)
     {
         return DiffFromFields<Json>(structured, compare);
     }
-    else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+    else if constexpr (!jive::IsArray<T> && MustReflect<T>)
     {
         return DiffFromReflection<Json>(structured, compare);
     }
@@ -432,7 +432,7 @@ T & DoPatch(T &base, const Json &unstructured)
                 }
             });
     }
-    else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+    else if constexpr (!jive::IsArray<T> && MustReflect<T>)
     {
         ForEach(
             base,

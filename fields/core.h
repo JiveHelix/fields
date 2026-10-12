@@ -21,6 +21,7 @@
 #include <fields/has_fields.h>
 #include <fields/for_each.h>
 #include <fields/reflect.h>
+#include <fields/core_member_type.h>
 #include <fields/hidden.h>
 
 
@@ -101,20 +102,28 @@ inline constexpr bool ImplementsUnstructure =
     ImplementsUnstructure_<T, Json>::value;
 
 
-template<std::size_t Index, typename Fields>
-using FieldElementType = typename std::tuple_element_t<Index, Fields>::Type;
-
-
-template<typename Field>
-using FieldType = typename std::remove_reference_t<Field>::Type;
-
-
+#if 0
 template<size_t Index, typename T>
     requires HasFields<std::remove_cvref_t<T>>
 decltype(auto) GetMember(T &&t)
 {
     using U = std::remove_cvref_t<T>;
     return t.*(std::get<Index>(U::fields).member);
+}
+#endif
+
+
+template<IsField FieldType, typename T>
+decltype(auto) GetMember(const FieldType &field, T &&t)
+{
+    if constexpr (IsAddressField<FieldType>)
+    {
+        return t.*(field.member);
+    }
+    else if constexpr (IsIndexField<FieldType>)
+    {
+        return GetMember<FieldType::index>(std::forward<T>(t));
+    }
 }
 
 
@@ -212,19 +221,20 @@ Json UnstructureFromFields(const T &structured)
 
             if constexpr (!GetIsHiddenField<T>(field))
             {
-                using Type = FieldType<decltype(field)>;
+                using Field = std::remove_cvref_t<decltype(field)>;
+                using Type = CoreMemberType<T, Field>;
 
                 if constexpr (std::is_array_v<Type>)
                 {
                     auto asVector =
-                        UnstructureArray(structured.*(field.member));
+                        UnstructureArray(GetMember(field, structured));
 
                     result[field.name] = Unstructure<Json>(asVector);
                 }
                 else if constexpr (!std::is_empty_v<Type>)
                 {
                     result[field.name] =
-                        Unstructure<Json>(structured.*(field.member));
+                        Unstructure<Json>(GetMember(field, structured));
                 }
             }
         });
@@ -249,14 +259,14 @@ Json UnstructureFromFields(const T &structured, const Fields &fields)
                 if constexpr (std::is_array_v<Type>)
                 {
                     auto asVector =
-                        UnstructureArray(structured.*(field.member));
+                        UnstructureArray(GetMember(field, structured));
 
                     result[field.name] = Unstructure<Json>(asVector);
                 }
                 else if constexpr (!std::is_empty_v<Type>)
                 {
                     result[field.name] =
-                        Unstructure<Json>(structured.*(field.member));
+                        Unstructure<Json>(GetMember(field, structured));
                 }
             }
         });
@@ -265,7 +275,7 @@ Json UnstructureFromFields(const T &structured, const Fields &fields)
 }
 
 
-template<typename Json, CanReflect T>
+template<typename Json, MustReflect T>
 Json UnstructureFromReflection(const T &structured)
 {
     Json result;
@@ -311,7 +321,7 @@ Json Unstructure(const T &structured)
     {
         return UnstructureFromFields<Json>(structured);
     }
-    else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+    else if constexpr (!jive::IsArray<T> && MustReflect<T>)
     {
         return UnstructureFromReflection<Json>(structured);
     }
@@ -462,13 +472,13 @@ T Restructure(const Json &unstructured)
                     {
                         // Reconstruct the object from the unstructured data.
                         StructureInPlace(
-                            result.*(field.member),
+                            GetMember(field, result),
                             *unstructuredMember);
                     }
                 }
             });
     }
-    else if constexpr (!jive::IsArray<T> && CanReflect<T>)
+    else if constexpr (!jive::IsArray<T> && MustReflect<T>)
     {
         ForEachIndexed(
             result,

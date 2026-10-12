@@ -19,7 +19,7 @@ struct HasFields_<T, std::void_t<decltype(T::fields)>
 > : std::true_type {};
 
 template<typename T>
-concept HasFields = HasFields_<T>::value;
+concept HasFields = HasFields_<std::remove_cvref_t<T>>::value;
 
 
 // Optionally, a class can name itself
@@ -31,7 +31,8 @@ struct HasFieldsTypeName_<T, std::void_t<decltype(T::fieldsTypeName)>
 > : std::true_type {};
 
 template<typename T>
-inline constexpr bool HasFieldsTypeName = HasFieldsTypeName_<T>::value;
+concept HasFieldsTypeName =
+    HasFieldsTypeName_<std::remove_cvref_t<T>>::value;
 
 
 } // end namespace fields
