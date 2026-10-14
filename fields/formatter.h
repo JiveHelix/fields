@@ -34,7 +34,7 @@ struct FirstFieldType_
     std::enable_if_t<CanReflect<T>>
 >
 {
-    using Type = Reflect<T>::template Element<0>;
+    using Type = typename Reflect<T>::template Element<0>;
 };
 
 

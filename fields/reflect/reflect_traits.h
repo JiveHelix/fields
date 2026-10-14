@@ -36,7 +36,7 @@ struct GetReflectorImpl
     std::enable_if_t<DefinesReflector<T>>
 >
 {
-    using Type = std::remove_cvref_t<T>::Reflector;
+    using Type = typename std::remove_cvref_t<T>::Reflector;
 };
 
 
@@ -47,7 +47,7 @@ struct GetReflectorImpl
     std::enable_if_t<DefinesMembers<T>>
 >
 {
-    using Type = std::remove_cvref_t<T>::Members;
+    using Type = typename std::remove_cvref_t<T>::Members;
 };
 
 

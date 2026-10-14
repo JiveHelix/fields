@@ -41,7 +41,7 @@ struct CoreMemberType_
 
 
 template<typename T, IsField F>
-using CoreMemberType = CoreMemberType_<T, F>::Type;
+using CoreMemberType = typename CoreMemberType_<T, F>::Type;
 
 
 template<HasFields T, std::size_t Index>

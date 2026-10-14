@@ -77,6 +77,9 @@ TEST_CASE("Diff is sparse", "[fields]")
     std::cout << "left:\n" << fields::Describe(left, 1) << std::endl;
     std::cout << "right:\n" << fields::Describe(right, 1) << std::endl;
 
+    static_assert(fields::HasFields<difftest::Bar>);
+    static_assert(fields::HasFields<difftest::Foo>);
+
     auto shouldBeEmpty = fields::Diff<nlohmann::json>(left, right);
 
     if (shouldBeEmpty.has_value())

@@ -282,7 +282,8 @@ template<typename T>
 struct ExcludeCompare
 {
     template<typename Member, size_t Index>
-    using DoExcludeHidden = ExcludeHidden<T>::template Exclude<Member, Index>;
+    using DoExcludeHidden =
+        typename ExcludeHidden<T>::template Exclude<Member, Index>;
 
     template<typename Member, size_t Index>
     struct Exclude

@@ -521,14 +521,13 @@ T & DoPatch(T &base, const Json &unstructured)
     {
         if (!unstructured.is_null())
         {
-            if (base)
+            if (!base)
             {
-                base = Patch(*base, unstructured);
+                using ValueType = typename T::value_type;
+                base.emplace(ValueType{});
             }
-            else
-            {
-                base.emplace(unstructured);
-            }
+
+            base = Patch(*base, unstructured);
         }
     }
     else if constexpr (std::is_enum_v<T>)

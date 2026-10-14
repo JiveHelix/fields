@@ -63,7 +63,7 @@ template
     size_t index,
     IsIndexHide HideType
 >
-constexpr bool GetIsMemberHidden(const HideType &)
+consteval bool GetIsMemberHidden(const HideType &)
 {
     return index == HideType::index;
 }
@@ -132,7 +132,7 @@ template
     IsAddressHide HideType
 >
     requires (HasFields<T>)
-constexpr bool GetIsMemberHidden(const HideType &hidden)
+consteval bool GetIsMemberHidden(const HideType &hidden)
 {
     constexpr auto memberField =
         std::get<index>(std::remove_cvref_t<T>::fields);
