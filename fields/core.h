@@ -102,17 +102,6 @@ inline constexpr bool ImplementsUnstructure =
     ImplementsUnstructure_<T, Json>::value;
 
 
-#if 0
-template<size_t Index, typename T>
-    requires HasFields<std::remove_cvref_t<T>>
-decltype(auto) GetMember(T &&t)
-{
-    using U = std::remove_cvref_t<T>;
-    return t.*(std::get<Index>(U::fields).member);
-}
-#endif
-
-
 template<IsField FieldType, typename T>
 decltype(auto) GetMember(const FieldType &field, T &&t)
 {
@@ -134,14 +123,16 @@ template<typename T>
     requires HasFields<std::remove_cvref_t<T>>
 struct MemberCount_<T>
 {
-    static constexpr size_t value = std::tuple_size_v<decltype(T::fields)>;
+    using Clean = std::remove_cvref_t<T>;
+    static constexpr size_t value = std::tuple_size_v<decltype(Clean::fields)>;
 };
 
 template<typename T>
     requires CanReflect<std::remove_cvref_t<T>>
 struct MemberCount_<T>
 {
-    static constexpr size_t value = GetMemberCount<T>();
+    using Clean = std::remove_cvref_t<T>;
+    static constexpr size_t value = ReflectMemberCount<ReflectorType<Clean>>();
 };
 
 template<typename T>

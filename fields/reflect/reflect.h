@@ -5,7 +5,7 @@
 #include <jive/optional.h>
 
 #include <fields/has_fields.h>
-#include <fields/reflect/get_member_count.h>
+#include <fields/reflect/reflect_member_count.h>
 #include <fields/reflect/member_names.h>
 #include <fields/reflect/reflect_traits.h>
 
@@ -45,7 +45,7 @@ struct Reflect
 {
     using Type = ReflectorType<T>;
 
-    static constexpr auto count = GetMemberCount<Type>();
+    static constexpr auto count = ReflectMemberCount<Type>();
 
 #if defined(__clang__)
 #pragma clang diagnostic push

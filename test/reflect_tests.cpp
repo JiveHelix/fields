@@ -5,13 +5,14 @@
   */
 
 #include <catch2/catch.hpp>
-#include <fields/reflect/get_member_count.h>
+#include <fields/reflect/reflect_member_count.h>
 #include <fields/reflect/reflect.h>
+#include <fields/reflect/field_index.h>
 #include <optional>
 
 
 
-TEST_CASE("Testing GetMemberCount", "[fields]")
+TEST_CASE("Testing ReflectMemberCount", "[reflect]")
 {
     struct OptionalTest
     {
@@ -20,14 +21,14 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
         std::optional<short> z;
     };
 
-    STATIC_REQUIRE(fields::GetMemberCount<OptionalTest>() == 3);
+    STATIC_REQUIRE(fields::ReflectMemberCount<OptionalTest>() == 3);
 
     struct EmptyTest
     {
 
     };
 
-    STATIC_REQUIRE(fields::GetMemberCount<EmptyTest>() == 0);
+    STATIC_REQUIRE(fields::ReflectMemberCount<EmptyTest>() == 0);
 
     struct StringMemberTest
     {
@@ -36,7 +37,7 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
         double y;
     };
 
-    STATIC_REQUIRE(fields::GetMemberCount<StringMemberTest>() == 3);
+    STATIC_REQUIRE(fields::ReflectMemberCount<StringMemberTest>() == 3);
 
     struct BaseMemberTest
     {
@@ -50,7 +51,7 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
         BaseMemberTest onlyOneMember;
     };
 
-    STATIC_REQUIRE(fields::GetMemberCount<DerivedMemberTest>() == 1);
+    STATIC_REQUIRE(fields::ReflectMemberCount<DerivedMemberTest>() == 1);
 
 
     struct Base
@@ -72,15 +73,15 @@ TEST_CASE("Testing GetMemberCount", "[fields]")
     };
 
 
-    STATIC_REQUIRE(fields::GetMemberCount<Base>() == 2);
+    STATIC_REQUIRE(fields::ReflectMemberCount<Base>() == 2);
 
     STATIC_REQUIRE(
-        fields::GetMemberCount<fields::ReflectorType<Derived>>() == 2);
+        fields::ReflectMemberCount<fields::ReflectorType<Derived>>() == 2);
 
-    STATIC_REQUIRE(fields::GetMemberCount<Container>() == 3);
+    STATIC_REQUIRE(fields::ReflectMemberCount<Container>() == 3);
 
     struct B { std::array<int,2> a; int k; };
-    STATIC_REQUIRE(fields::GetMemberCount<B>() == 2);
+    STATIC_REQUIRE(fields::ReflectMemberCount<B>() == 2);
 }
 
 
@@ -107,11 +108,20 @@ struct Names
 } // end namespace name_tests
 
 
-TEST_CASE("Testing member names", "[fields]")
+TEST_CASE("Testing member names", "[reflect]")
 {
     using Reflected = fields::Reflect<name_tests::Names>;
     REQUIRE(Reflected::name<0> == "foo");
     REQUIRE(Reflected::name<1> == "bar");
     REQUIRE(Reflected::name<2> == "wibble");
     REQUIRE(Reflected::name<3> == "wobble");
+}
+
+
+TEST_CASE("FieldIndex returns correct value", "[reflect]")
+{
+    STATIC_REQUIRE(fields::FieldIndex<"foo", name_tests::Names>() == 0);
+    STATIC_REQUIRE(fields::FieldIndex<"bar", name_tests::Names>() == 1);
+    STATIC_REQUIRE(fields::FieldIndex<"wibble", name_tests::Names>() == 2);
+    STATIC_REQUIRE(fields::FieldIndex<"wobble", name_tests::Names>() == 3);
 }

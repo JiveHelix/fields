@@ -207,7 +207,7 @@ TEST_CASE("Unstructure/Structure a comedy troupe", "[fields]")
         .sirGalahadThePure = Python::palin
     };
 
-    STATIC_REQUIRE(fields::GetMemberCount<ComedyTroupe>() == 7);
+    STATIC_REQUIRE(fields::ReflectMemberCount<ComedyTroupe>() == 7);
 
     FIELDS_TEST_LOG(fields::DescribeColorized(troupe, 1));
     auto asJson = fields::Unstructure<nlohmann::json>(troupe);

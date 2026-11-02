@@ -4,7 +4,7 @@
 #include <jive/type_traits.h>
 #include <jive/optional.h>
 #include <fields/has_fields.h>
-#include <fields/reflect/get_member_count.h>
+#include <fields/reflect/reflect_member_count.h>
 
 
 namespace fields
@@ -63,7 +63,7 @@ constexpr bool CheckMemberCountIsOkay()
         // We must use reflection to inspect the members.
         // Check the member count.
 
-        constexpr auto memberCount = GetMemberCount<T>();
+        constexpr auto memberCount = ReflectMemberCount_<T>();
 
         return (memberCount > 0) && (memberCount <= maximumReflectCount);
     }
@@ -143,14 +143,14 @@ template<typename T>
 concept HasReflector = requires
 {
     typename ReflectorType<T>;
-    requires !HasFields<T>;
+    // requires !HasFields<T>;
 };
 
 
 template<typename T>
 concept CanReflect =
     CanReflectImpl<std::remove_cvref_t<T>>
-    || HasReflector<std::remove_cvref_t<T>>;
+    || HasReflector<T>;
 
 
 template<typename T>
@@ -159,6 +159,24 @@ concept MustReflect = CanReflect<T> && !HasFields<T>;
 
 template<typename T>
 concept CanInspect = HasFields<T> || CanReflect<T>;
+
+
+
+template<typename T>
+    requires (HasReflector<T>)
+consteval std::size_t ReflectMemberCount()
+{
+    return ReflectMemberCount_<ReflectorType<T>>();
+}
+
+template<typename T>
+    requires (!HasReflector<T>)
+consteval std::size_t ReflectMemberCount()
+{
+    return ReflectMemberCount_<T>();
+}
+
+
 
 
 } // end namespace fields

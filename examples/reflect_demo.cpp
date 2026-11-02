@@ -140,7 +140,7 @@ struct Wobble
 };
 
 
-static_assert(fields::GetMemberCount<Wobble>() == 6);
+static_assert(fields::ReflectMemberCount<Wobble>() == 6);
 static_assert(std::is_same_v<decltype(Wobble::alpha), std::array<std::array<uint8_t, 4>, 2>>);
 
 

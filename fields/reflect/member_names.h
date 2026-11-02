@@ -5,7 +5,7 @@
 
 #include <jive/compiler.h>
 #include "get_member_tuple.h"
-#include "get_member_count.h"
+#include "reflect_member_count.h"
 
 
 namespace fields
@@ -35,14 +35,14 @@ template<typename Member>
 }
 
 
-template <class T>
+template <typename T>
 struct Pointer
 {
     const T *value;
 };
 
 
-template<size_t index, class T>
+template<size_t index, typename T>
 constexpr auto GetPointer(T&& t)
 {
     auto &member = std::get<index>(GetMemberTuple(t));
@@ -50,7 +50,7 @@ constexpr auto GetPointer(T&& t)
 }
 
 
-template <class T>
+template <typename T>
 extern const T inspect;
 
 
@@ -73,7 +73,7 @@ template<size_t I, typename T>
 using MemberType = typename MemberType_<I, T>::Type;
 
 
-template<auto N, class T>
+template<auto N, typename T>
 inline constexpr auto PrettyName =
     []() constexpr
     {
@@ -198,7 +198,7 @@ struct MemberNames_
         {
             return std::array{MemberName<Is, Type>...};
         }
-        (std::make_index_sequence<GetMemberCount<Type>()>{});
+        (std::make_index_sequence<ReflectMemberCount<Type>()>{});
 };
 
 

@@ -1,14 +1,18 @@
 #pragma once
 
 
-#include "get_member_count.h"
+#include <fields/reflect/reflect_traits.h>
 
 
 namespace fields
 {
 
 
-template<typename T, size_t memberCount = GetMemberCount<T>()>
+template
+<
+    typename T,
+    size_t memberCount = ReflectMemberCount<T>()
+>
     requires (memberCount <= maximumReflectCount)
 constexpr decltype(auto) GetMemberTuple(T &&t)
 {

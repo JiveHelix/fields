@@ -73,7 +73,7 @@ template<typename T, typename Function>
     requires CanReflect<T>
 void ForEach(T &&t, Function &&function)
 {
-    static constexpr auto count = GetMemberCount<ReflectorType<T>>();
+    static constexpr auto count = ReflectMemberCount<ReflectorType<T>>();
 
     ForEachImpl(
         ForwardReflector<T>(std::forward<T>(t)),
@@ -113,7 +113,7 @@ template<typename T, typename Function>
     requires CanReflect<T>
 void ForEachIndexed(T &&t, Function &&function)
 {
-    static constexpr auto count = GetMemberCount<ReflectorType<T>>();
+    static constexpr auto count = ReflectMemberCount<ReflectorType<T>>();
 
     ForEachIndexedImpl(
         ForwardReflector<T>(std::forward<T>(t)),
@@ -177,10 +177,10 @@ template<typename Left, typename Right, typename Function>
     requires (CanReflect<Left> && CanReflect<Right>)
 void ForEachZip(Left &&left, Right &&right, Function &&function)
 {
-    static constexpr auto count = GetMemberCount<ReflectorType<Left>>();
+    static constexpr auto count = ReflectMemberCount<ReflectorType<Left>>();
 
     static_assert(
-        GetMemberCount<ReflectorType<Right>>() == count,
+        ReflectMemberCount<ReflectorType<Right>>() == count,
         "Both left and right must have the same member count");
 
     ForEachZipImpl(
